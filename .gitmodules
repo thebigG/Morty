@@ -1,0 +1,3 @@
+[submodule "meta-xilinx"]
+	path = meta-xilinx
+	url = git@github.com:Xilinx/meta-xilinx.git
