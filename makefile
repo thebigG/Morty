@@ -34,6 +34,7 @@ tftp-server:
 	sudo service tftp-hpa start
 
 #FILE_NAME is relative to the tftp server directory such as /tftpboot. Very useful for transfering files to board.
+#NOTE:If running inside VM, make sure that your network is bridged.
 tftp-client-copy:
 	tftp -g -r $(FILE_NAME) $(SERVER_IP)
 
