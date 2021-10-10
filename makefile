@@ -22,6 +22,10 @@ clean:
 	@cd $(BUILD_DIR)
 	@MACHINE=qemu-zynq7 bitbake -c clean $(BB_RECIPE)
 
+minimal-image:
+	@cd $(BUILD_DIR)
+	@bitbake core-image-minimal
+
 #For the tftp server you need to add `/etc/default/tftp-hpa`:
 #TFTP_USERNAME="lgomez"
 #TFTP_DIRECTORY="/tftpboot"
