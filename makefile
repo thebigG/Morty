@@ -12,7 +12,7 @@ qemu:
 
 qemu-layer:
 	@cd $(BUILD_DIR)
-	@MACHINE=qemu-zynq7 bitbake $(LAYER)
+	@MACHINE=qemu-zynq7 bitbake core-image-minimal
 
 run-qemu:
 	@cd  $(BUILD_DIR)
