@@ -10,6 +10,9 @@ qemu:
 	@cd $(BUILD_DIR)
 	@MACHINE=qemu-zynq7 bitbake core-image-minimal
 
+qemu-sdk:
+	@MACHINE=qemu-zynq7 bitbake core-image-minimal -c populate_sdk
+
 qemu-layer:
 	@cd $(BUILD_DIR)
 	@MACHINE=qemu-zynq7 bitbake core-image-minimal
@@ -34,8 +37,9 @@ minimal-image:
 #RUN_DAEMON="yes" # maybe no need for that
 #OPTIONS="-l -s /var/lib/tftpboot"
 
+#sudo apt-get install tftpd-hpa
 tftp-server:
-	sudo service tftp-hpa start
+	sudo service tftpd-hpa start
 
 #FILE_NAME is relative to the tftp server directory such as /tftpboot. Very useful for transfering files to board.
 #NOTE:If running inside VM, make sure that your network is bridged.
