@@ -29,7 +29,7 @@ minimal-image:
 	@cd $(BUILD_DIR)
 	@bitbake core-image-minimal
 
-#For the tftp server you need to add `/etc/default/tftp-hpa`:
+#For the tftp server you need to add `/etc/default/tftpd-hpa`:
 #TFTP_USERNAME="lgomez"
 #TFTP_DIRECTORY="/tftpboot"
 #TFTP_ADDRESS="0.0.0.0:69"
