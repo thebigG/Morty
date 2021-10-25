@@ -20,6 +20,7 @@ hob-image-*.bb
 !meta-yocto-imported
 !meta-xilinx
 !meta-openembedded
+!meta-hello-cmake
 documentation/user-manual/user-manual.html
 documentation/user-manual/user-manual.pdf
 documentation/user-manual/user-manual.tgz
