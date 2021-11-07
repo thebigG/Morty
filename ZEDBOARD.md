@@ -16,6 +16,8 @@
 6. cd to `morty`(root dir of repo) and run `make minimal-image`
    
 Notes:
+
+# Development of custom layers:
 ```
   155  devtool deploy-target hellocmake qemu-zynq7
   156  devtool add recipe /home/lgomez/morty/meta-hello-cmake/
@@ -58,5 +60,22 @@ Notes:
   459  MACHINE=qemu-zynq7 devtool build-image core-image-minimal
   464  MACHINE=qemu-zynq7 devtool build hellocmake
 
+```
+
+# Files to copy to SD card:
+
+These files are usually in `tmp/deploy/images/zedboard-zynq7` after building the image.
+```
+  Copy the following to FAT partition:
+  ./tmp/deploy/images/zedboard-zynq7/boot.bin
+  uImage 
+  core-image-minimal-zedboard-zynq7.cpio.gz.u-boot 
+  uEnv.txt
+  uImage-zynq-zed.dtb 
+  core-image-minimal-zedboard-zynq7-20211107015917.rootfs.cpio.gz.u-boot
+  u-boot.img
+
+  Untar core-image-minimal-zedboard-zynq7.tar.gz into the ext3 partition:
+  core-image-minimal-zedboard-zynq7.tar.gz
 ```
 
