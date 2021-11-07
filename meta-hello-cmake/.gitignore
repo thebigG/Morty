@@ -1,0 +1,7 @@
+/*.patch
+*.swp
+*.orig
+*.rej
+*~
+oe-logs
+oe-workdir
