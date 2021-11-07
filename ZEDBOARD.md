@@ -69,7 +69,6 @@ These files are usually in `tmp/deploy/images/zedboard-zynq7` after building the
   Copy the following to FAT partition:
   ./tmp/deploy/images/zedboard-zynq7/boot.bin
   uImage 
-  core-image-minimal-zedboard-zynq7.cpio.gz.u-boot 
   uEnv.txt
   uImage-zynq-zed.dtb 
   core-image-minimal-zedboard-zynq7-20211107015917.rootfs.cpio.gz.u-boot
