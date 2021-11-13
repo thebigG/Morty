@@ -77,4 +77,13 @@ These files are usually in `tmp/deploy/images/zedboard-zynq7` after building the
   Untar core-image-minimal-zedboard-zynq7.tar.gz into the ext3 partition:
   core-image-minimal-zedboard-zynq7.tar.gz
 ```
+# Loading the bit stream to zedboard:
+Once it boots, you can use the following commands:
+
+```
+Assuming the bit strea, is called "custom_ip.bit"
+
+fatload mmc 0 ${loadbit_addr} custom_ip.bit
+fpga loadb 0 ${loadbit_addr} $filesize
+```
 
