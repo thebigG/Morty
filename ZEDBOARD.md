@@ -81,9 +81,16 @@ These files are usually in `tmp/deploy/images/zedboard-zynq7` after building the
 Once it boots, you can use the following commands:
 
 ```
-Assuming the bit strea, is called "custom_ip.bit"
+Assuming the bit stream is called "custom_ip.bit"
 
 fatload mmc 0 ${loadbit_addr} custom_ip.bit
 fpga loadb 0 ${loadbit_addr} $filesize
 ```
 
+Another way of loading the bit stream via linux:  
+`cat bitstream.bit > /dev/xdevcfg`  
+To know the state after the FPGA load:
+```
+$ cat /sys/class/xdevcfg/xdevcfg/device/prog_done
+1
+```
