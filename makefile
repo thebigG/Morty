@@ -4,7 +4,7 @@
 
 .ONESHELL:
 .SHELLFLAGS += -e
-BUILD_DIR   := build 
+BUILD_DIR   := build
 
 qemu:
 	@cd $(BUILD_DIR)
@@ -29,7 +29,11 @@ minimal-image:
 	@cd $(BUILD_DIR)
 	@bitbake core-image-minimal
 
-#For the tftp server you need to add `/etc/default/tftpd-hpa`:
+boot-bin:
+	@/opt/Xilinx/SDK/2016.2/bin/bootgen -w -image hw_config/zedboard.bif  -arch zynq -o build/tmp/deploy/images/zedboard-zynq7/boot.bin
+
+
+#For the tftp server you need to add `/etc/default/tftp-hpa`:
 #TFTP_USERNAME="lgomez"
 #TFTP_DIRECTORY="/tftpboot"
 #TFTP_ADDRESS="0.0.0.0:69"
@@ -46,7 +50,6 @@ tftp-server:
 tftp-client-copy:
 	tftp -g -r $(FILE_NAME) $(SERVER_IP)
 
-#Add meta-skeleton directory to make your life easier. 
+#Add meta-skeleton directory to make your life easier.
 yocto-layer:
 	yocto-layer create $(LAYER_NAME)
-        
