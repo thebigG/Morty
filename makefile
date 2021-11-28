@@ -26,6 +26,10 @@ minimal-image:
 	@cd $(BUILD_DIR)
 	@bitbake core-image-minimal
 
+boot-bin:
+	@/opt/Xilinx/SDK/2016.2/bin/bootgen -w -image hw_config/zedboard.bif  -arch zynq -o build/tmp/deploy/images/zedboard-zynq7/boot.bin
+
+
 #For the tftp server you need to add `/etc/default/tftp-hpa`:
 #TFTP_USERNAME="lgomez"
 #TFTP_DIRECTORY="/tftpboot"
