@@ -13,8 +13,8 @@
     `MACHINE ??= "zedboard-zynq7"`
 5. ADD `/home/lorenzogomez/morty/meta-xilinx` and  `/home/lorenzogomez/morty/meta-openembedded/meta-oe` to `/home/lgomez/morty/build/conf/bblayers.conf` file.
    In the end it should look something like this:
-   ```
-	# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+  ```
+    # POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
 # changes incompatibly
 POKY_BBLAYERS_CONF_VERSION = "2"
 
@@ -28,8 +28,11 @@ BBLAYERS ?= " \
   /home/lgomez/morty/meta-xilinx \
   /home/lgomez/morty/meta-openembedded/meta-oe \ 
   "
-   ```
+   
    Do note the full paths might be different on your machine.
+```
+
+
 6. cd to `morty`(root dir of repo) and run `make minimal-image`
    
 Notes:
