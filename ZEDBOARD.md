@@ -14,19 +14,19 @@
 5. ADD `/home/lorenzogomez/morty/meta-xilinx` and  `/home/lorenzogomez/morty/meta-openembedded/meta-oe` to `/home/lgomez/morty/build/conf/bblayers.conf` file.
    In the end it should look something like this:
    ```
-   # POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
-   # changes incompatibly
-   POKY_BBLAYERS_CONF_VERSION = "2"
+	# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+POKY_BBLAYERS_CONF_VERSION = "2"
 
-   BBPATH = "${TOPDIR}"
-   BBFILES ?= ""
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
 
-   BBLAYERS ?= " \
+BBLAYERS ?= " \
   /home/lgomez/morty/meta \
   /home/lgomez/morty/meta-poky \
   /home/lgomez/morty/meta-yocto-bsp \
-  /home/yocto/meta-xilinx \
-  /home/yocto/poky/meta-openembedded/emat-oe \ 
+  /home/lgomez/morty/meta-xilinx \
+  /home/lgomez/morty/meta-openembedded/meta-oe \ 
   "
    ```
    Do note the full paths might be different on your machine.
