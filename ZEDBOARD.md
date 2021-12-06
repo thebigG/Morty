@@ -11,7 +11,24 @@
 3. `source ./oe-init-build-env`
 4. In `morty/build/conf/local.conf`, comment out `MACHINE ??= "qemux86"` and add
     `MACHINE ??= "zedboard-zynq7"`
-5. ADD `/home/lorenzogomez/morty/meta-xilinx` and  `/home/lorenzogomez/morty/meta-openembedded/meta-oe` to `bblayers.conf` file.
+5. ADD `/home/lorenzogomez/morty/meta-xilinx` and  `/home/lorenzogomez/morty/meta-openembedded/meta-oe` to `/home/lgomez/morty/build/conf/bblayers.conf` file.
+   In the end it should look something like this:
+   ```
+   # POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+   # changes incompatibly
+   POKY_BBLAYERS_CONF_VERSION = "2"
+
+   BBPATH = "${TOPDIR}"
+   BBFILES ?= ""
+
+   BBLAYERS ?= " \
+  /home/lgomez/morty/meta \
+  /home/lgomez/morty/meta-poky \
+  /home/lgomez/morty/meta-yocto-bsp \
+  /home/yocto/meta-xilinx \
+  /home/yocto/poky/meta-openembedded/emat-oe \ 
+  "
+   ```
    Do note the full paths might be different on your machine.
 6. cd to `morty`(root dir of repo) and run `make minimal-image`
    
