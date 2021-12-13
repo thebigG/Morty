@@ -1,0 +1,14 @@
+This README file contains information on the contents of the meta-yoctoboost layer.
+
+Please see the corresponding sections below for details.
+
+Dependencies
+============
+
+  URI: https://github.com/loic-yvonnet/boost-program-options-example-dev
+  branch: master
+
+Patches
+=======
+
+None
