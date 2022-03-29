@@ -21,6 +21,7 @@ hob-image-*.bb
 !meta-xilinx
 !meta-openembedded
 !meta-hello-cmake
+!meta-wt-hello
 documentation/user-manual/user-manual.html
 documentation/user-manual/user-manual.pdf
 documentation/user-manual/user-manual.tgz
