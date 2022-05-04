@@ -4,5 +4,6 @@ the_ROM_image:
 
 {
 [bootloader]/home/lgomez/led_switch2/led_switch2.sdk/fsbl/Debug/fsbl.elf
+/home/lgomez/bitstream.bit
 /home/lgomez/morty/build/tmp/deploy/images/zedboard-zynq7/u-boot.elf
 }
