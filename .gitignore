@@ -22,6 +22,7 @@ hob-image-*.bb
 !meta-openembedded
 !meta-hello-cmake
 !meta-wt-hello
+!meta-gpio
 documentation/user-manual/user-manual.html
 documentation/user-manual/user-manual.pdf
 documentation/user-manual/user-manual.tgz
