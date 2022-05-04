@@ -9,7 +9,7 @@ inherit cmake
 
 DEPENDS = "boost"
 SRCREV = "${AUTOREV}"
-SRC_URI = "gitsm://github.com/thebigG/wt-example.git;branch=main"
+SRC_URI = "git://github.com/thebigG/wt-example.git;branch=main;protocol=http"
 
 S = "${WORKDIR}/git"
 
