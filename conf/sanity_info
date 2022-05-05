@@ -1,0 +1,4 @@
+SANITY_VERSION 1
+TMPDIR /home/lgomez/morty/build/tmp
+SSTATE_DIR /home/lgomez/morty/build/sstate-cache
+NATIVELSBSTRING Ubuntu-18.04
