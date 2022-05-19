@@ -114,3 +114,10 @@ To know the state after the FPGA load:
 $ cat /sys/class/xdevcfg/xdevcfg/device/prog_done
 1
 ```
+
+To rebuild cmake project without having to build the kernel again:
+```
+1. cd ~/morty/build/tmp/work/cortexa9hf-neon-poky-linux-gnueabi/recipes-gpio/1.0-r0/build
+2. Pull repo(update sources)
+3. Call make
+```
