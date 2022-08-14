@@ -32,6 +32,9 @@ minimal-image:
 boot-bin:
 	@/opt/Xilinx/SDK/2016.2/bin/bootgen -w -image hw_config/zedboard.bif  -arch zynq -o build/tmp/deploy/images/zedboard-zynq7/boot.bin
 
+#Useful for loading fpga with xdevcfg 
+boot-bin-split:
+	@/opt/Xilinx/SDK/2016.2/bin/bootgen -split bin -w -image hw_config/zedboard.bif  -arch zynq
 
 #For the tftp server you need to add `/etc/default/tftp-hpa`:
 #TFTP_USERNAME="lgomez"
