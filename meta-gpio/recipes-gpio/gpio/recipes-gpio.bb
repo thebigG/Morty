@@ -13,7 +13,7 @@ do_install() {
 
 DEPENDS = "boost"
 SRCREV = "${AUTOREV}"
-SRC_URI = "git://github.com/thebigG/simple_gpio.git;branch=main;protocol=http"
+SRC_URI = "gitsm://github.com/thebigG/simple_gpio.git;branch=main;protocol=http"
 
 S = "${WORKDIR}/git"
 
