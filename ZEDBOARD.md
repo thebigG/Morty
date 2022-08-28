@@ -121,3 +121,46 @@ To rebuild cmake project without having to build the kernel again:
 2. Pull repo(update sources)
 3. Call make
 ```
+
+Generating DTS(Device Tree Sources) files
+```
+rlwrap: warning: your $TERM is 'xterm-256color' but rlwrap couldn't find it in the terminfo database. Expect some problems.
+
+****** Xilinx Software Commandline Tool (XSCT) v2016.2
+  **** Build date : Jun  2 2016-16:54:05
+    ** Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.
+
+
+xsct% hsi                                                                                                                                                                                                          
+wrong # args: should be "hsi subcommand ?argument ...?"
+xsct% hsi::get_cells * -filter {IP_TYPE==PROCESSOR}                                                                                                                                                                
+ERROR: [Hsi 55-1593] Current Hardware Design is not set.
+ERROR: [Hsi 55-1501] No Hardware designs opened. Open a hardware design first
+ERROR: [Common 17-39] 'hsi::get_cells' failed due to earlier errors.
+
+xsct% hsi open_hw_design /home/lgomez/hardware_output/                                                                                                                                                             
+design_ps_pl_wrapper.bit  design_ps_pl_wrapper.hdf  ps7_init.c                ps7_init.h                ps7_init.html             ps7_init.tcl              ps7_init_gpl.c            ps7_init_gpl.h
+xsct% hsi open_hw_design /home/lgomez/hardware_output/
+design_ps_pl_wrapper.bit  design_ps_pl_wrapper.hdf  ps7_init.c                ps7_init.h                ps7_init.html             ps7_init.tcl              ps7_init_gpl.c            ps7_init_gpl.h
+xsct% hsi open_hw_design /home/lgomez/hardware_output/design_ps_pl_wrapper.hdf 
+design_ps_pl_wrapper                                                                                                                                                                                               
+xsct% hsi::get_cells * -filter {IP_TYPE==PROCESSOR}                                                                                                                                                                
+ps7_cortexa9_0 ps7_cortexa9_1
+xsct% hsi set_repo_path /home/lgomez/device-tree-xlnx                                                                                                                                                              
+INFO: [Hsi 55-1698] elapsed time for repository loading 0 seconds                                                                                                                                                  
+xsct% hsi create_sw_design device-tree -os device_tree -proc ps7_cortexa9_0                                                                                                                                        
+device-tree
+xsct% hsi generate_target -dir my_dts                                                                                                                                                                              
+WARNING: ps7_ethernet_0: No reset found                                                                                                                                                                            
+WARNING: ps7_usb_0: No reset found                                                                                                                                                                                 
+xsct% hsi close_hw_design                                                                                                                                                                                          
+Display all 253 possibilities? (y or n)
+xsct% hsi close_hw_design /home/lgomez/hardware_output/design_ps_pl_wrapper.hdf
+WARNING: [Hsi 55-1568] The Hardware design name provided is not opened
+ERROR: [Hsi 55-1448] Error: running current_hw_design.
+ERROR: [Common 17-39] 'hsi::close_hw_design' failed due to earlier errors.
+
+xsct% exit                                                                                                                                                                                                         
+exit
+```
+```
