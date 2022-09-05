@@ -9,6 +9,7 @@ sources/
 meta-*/
 !meta-skeleton
 !meta-selftest
+!meta-gpio
 hob-image-*.bb
 *.swp
 *.orig
