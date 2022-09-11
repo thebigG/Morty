@@ -20,7 +20,9 @@ KBRANCH_{{=machine}}  = "{{=existing_kbranch}}"
 {{ if smp == "y": }}
 KERNEL_FEATURES_append_{{=machine}} += " cfg/smp.scc"
 
-SRC_URI += "file://{{=machine}}-tiny.scc \
+SRC_URI += "file://{{=machine}}.scc \
+            file://{{=machine}}.cfg \
+            file://{{=machine}}-tiny.scc \
             file://{{=machine}}-user-config.cfg \
             file://{{=machine}}-user-patches.scc \
             file://{{=machine}}-user-features.scc \
@@ -28,6 +30,8 @@ SRC_URI += "file://{{=machine}}-tiny.scc \
 
 # replace these SRCREVs with the real commit ids once you've had
 # the appropriate changes committed to the upstream linux-yocto repo
-#SRCREV_machine_pn-linux-yocto-tiny_{{=machine}} ?= "${AUTOREV}"
-#SRCREV_meta_pn-linux-yocto-tiny_{{=machine}} ?= "${AUTOREV}"
+SRCREV_machine_pn-linux-yocto-tiny_{{=machine}} ?= "${AUTOREV}"
+SRCREV_meta_pn-linux-yocto-tiny_{{=machine}} ?= "${AUTOREV}"
 #LINUX_VERSION = "4.4"
+#Remove the following line once AUTOREV is locked to a certain SRCREV
+KERNEL_VERSION_SANITY_SKIP = "1"

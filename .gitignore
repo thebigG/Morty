@@ -9,6 +9,7 @@ sources/
 meta-*/
 !meta-skeleton
 !meta-selftest
+!meta-gpio
 hob-image-*.bb
 *.swp
 *.orig
@@ -18,11 +19,6 @@ hob-image-*.bb
 !meta-yocto
 !meta-yocto-bsp
 !meta-yocto-imported
-!meta-xilinx
-!meta-openembedded
-!meta-hello-cmake
-!meta-wt-hello
-!meta-gpio
 documentation/user-manual/user-manual.html
 documentation/user-manual/user-manual.pdf
 documentation/user-manual/user-manual.tgz

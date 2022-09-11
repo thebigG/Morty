@@ -130,25 +130,6 @@ def read_workspace():
                                      'recipefile': recipefile}
                     logger.debug('Found recipe %s' % workspace[pn])
 
-def create_unlockedsigs():
-    """ This function will make unlocked-sigs.inc match the recipes in the
-    workspace. This runs on every run of devtool, but it lets us ensure
-    the unlocked items are in sync with the workspace. """
-
-    confdir = os.path.join(basepath, 'conf')
-    unlockedsigs = os.path.join(confdir, 'unlocked-sigs.inc')
-    bb.utils.mkdirhier(confdir)
-    with open(os.path.join(confdir, 'unlocked-sigs.inc'), 'w') as f:
-        f.write("# DO NOT MODIFY! YOUR CHANGES WILL BE LOST.\n" +
-                "# This layer was created by the OpenEmbedded devtool" +
-                " utility in order to\n" +
-                "# contain recipes that are unlocked.\n")
-
-        f.write('SIGGEN_UNLOCKED_RECIPES += "\\\n')
-        for pn in workspace:
-            f.write('    ' + pn)
-        f.write('"')
-
 def create_workspace(args, config, basepath, workspace):
     if args.layerpath:
         workspacedir = os.path.abspath(args.layerpath)
@@ -214,6 +195,9 @@ def main():
     global basepath
     global config
     global context
+
+    if sys.getfilesystemencoding() != "utf-8":
+        sys.exit("Please use a locale setting which supports utf-8.\nPython can't change the filesystem locale after loading so we need a utf-8 when python starts or things won't work.")
 
     context = Context(fixed_setup=False)
 
@@ -288,13 +272,17 @@ def main():
     scriptutils.logger_setup_color(logger, global_args.color)
 
     if global_args.bbpath is None:
-        tinfoil = setup_tinfoil(config_only=True, basepath=basepath)
         try:
-            global_args.bbpath = tinfoil.config_data.getVar('BBPATH', True)
-        finally:
-            tinfoil.shutdown()
+            tinfoil = setup_tinfoil(config_only=True, basepath=basepath)
+            try:
+                global_args.bbpath = tinfoil.config_data.getVar('BBPATH')
+            finally:
+                tinfoil.shutdown()
+        except bb.BBHandledException:
+            return 2
 
-    for path in [scripts_path] + global_args.bbpath.split(':'):
+    # Search BBPATH first to allow layers to override plugins in scripts_path
+    for path in global_args.bbpath.split(':') + [scripts_path]:
         pluginpath = os.path.join(path, 'lib', 'devtool')
         scriptutils.load_plugins(logger, plugins, pluginpath)
 
@@ -325,7 +313,6 @@ def main():
 
     if not getattr(args, 'no_workspace', False):
         read_workspace()
-        create_unlockedsigs()
 
     try:
         ret = args.func(args, config, basepath, workspace)

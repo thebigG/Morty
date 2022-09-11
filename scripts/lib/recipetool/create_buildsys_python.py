@@ -356,6 +356,8 @@ class PythonRecipeHandler(RecipeHandler):
         # Naive mapping of setup() arguments to PKG-INFO field names
         for d in [info, non_literals]:
             for key, value in list(d.items()):
+                if key is None:
+                    continue
                 new_key = _map(key)
                 if new_key != key:
                     del d[key]
@@ -532,11 +534,11 @@ class PythonRecipeHandler(RecipeHandler):
 
     def parse_pkgdata_for_python_packages(self):
         suffixes = [t[0] for t in imp.get_suffixes()]
-        pkgdata_dir = tinfoil.config_data.getVar('PKGDATA_DIR', True)
+        pkgdata_dir = tinfoil.config_data.getVar('PKGDATA_DIR')
 
         ldata = tinfoil.config_data.createCopy()
         bb.parse.handle('classes/python-dir.bbclass', ldata, True)
-        python_sitedir = ldata.getVar('PYTHON_SITEPACKAGES_DIR', True)
+        python_sitedir = ldata.getVar('PYTHON_SITEPACKAGES_DIR')
 
         dynload_dir = os.path.join(os.path.dirname(python_sitedir), 'lib-dynload')
         python_dirs = [python_sitedir + os.sep,

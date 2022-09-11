@@ -30,16 +30,14 @@ from devtool import parse_recipe
 
 logger = logging.getLogger('devtool')
 
-
-def edit_recipe(args, config, basepath, workspace):
-    """Entry point for the devtool 'edit-recipe' subcommand"""
+def _find_recipe_path(args, config, basepath, workspace):
     if args.any_recipe:
         tinfoil = setup_tinfoil(config_only=False, basepath=basepath)
         try:
             rd = parse_recipe(config, tinfoil, args.recipename, True)
             if not rd:
-                return 1
-            recipefile = rd.getVar('FILE', True)
+                raise DevtoolError("Failed to find specified recipe")
+            recipefile = rd.getVar('FILE')
         finally:
             tinfoil.shutdown()
     else:
@@ -48,8 +46,19 @@ def edit_recipe(args, config, basepath, workspace):
         if not recipefile:
             raise DevtoolError("Recipe file for %s is not under the workspace" %
                                args.recipename)
+    return recipefile
 
-    return scriptutils.run_editor(recipefile)
+
+def find_recipe(args, config, basepath, workspace):
+    """Entry point for the devtool 'find-recipe' subcommand"""
+    recipefile = _find_recipe_path(args, config, basepath, workspace)
+    print(recipefile)
+    return 0
+
+
+def edit_recipe(args, config, basepath, workspace):
+    """Entry point for the devtool 'edit-recipe' subcommand"""
+    return scriptutils.run_editor(_find_recipe_path(args, config, basepath, workspace), logger)
 
 
 def configure_help(args, config, basepath, workspace):
@@ -62,20 +71,20 @@ def configure_help(args, config, basepath, workspace):
         rd = parse_recipe(config, tinfoil, args.recipename, appends=True, filter_workspace=False)
         if not rd:
             return 1
-        b = rd.getVar('B', True)
-        s = rd.getVar('S', True)
+        b = rd.getVar('B')
+        s = rd.getVar('S')
         configurescript = os.path.join(s, 'configure')
         confdisabled = 'noexec' in rd.getVarFlags('do_configure') or 'do_configure' not in (rd.getVar('__BBTASKS', False) or [])
-        configureopts = oe.utils.squashspaces(rd.getVar('CONFIGUREOPTS', True) or '')
-        extra_oeconf = oe.utils.squashspaces(rd.getVar('EXTRA_OECONF', True) or '')
-        extra_oecmake = oe.utils.squashspaces(rd.getVar('EXTRA_OECMAKE', True) or '')
-        do_configure = rd.getVar('do_configure', True) or ''
+        configureopts = oe.utils.squashspaces(rd.getVar('CONFIGUREOPTS') or '')
+        extra_oeconf = oe.utils.squashspaces(rd.getVar('EXTRA_OECONF') or '')
+        extra_oecmake = oe.utils.squashspaces(rd.getVar('EXTRA_OECMAKE') or '')
+        do_configure = rd.getVar('do_configure') or ''
         do_configure_noexpand = rd.getVar('do_configure', False) or ''
         packageconfig = rd.getVarFlags('PACKAGECONFIG') or []
         autotools = bb.data.inherits_class('autotools', rd) and ('oe_runconf' in do_configure or 'autotools_do_configure' in do_configure)
         cmake = bb.data.inherits_class('cmake', rd) and ('cmake_do_configure' in do_configure)
-        cmake_do_configure = rd.getVar('cmake_do_configure', True)
-        pn = rd.getVar('PN', True)
+        cmake_do_configure = rd.getVar('cmake_do_configure')
+        pn = rd.getVar('PN')
     finally:
         tinfoil.shutdown()
 
@@ -219,6 +228,14 @@ def register_commands(subparsers, context):
     parser_edit_recipe.add_argument('recipename', help='Recipe to edit')
     parser_edit_recipe.add_argument('--any-recipe', '-a', action="store_true", help='Edit any recipe, not just where the recipe file itself is in the workspace')
     parser_edit_recipe.set_defaults(func=edit_recipe)
+
+    # Find-recipe
+    parser_find_recipe = subparsers.add_parser('find-recipe', help='Find a recipe file in your workspace',
+                                         description='By default, this will find a recipe file in your workspace; you can override this with the -a/--any-recipe option.',
+                                         group='working')
+    parser_find_recipe.add_argument('recipename', help='Recipe to find')
+    parser_find_recipe.add_argument('--any-recipe', '-a', action="store_true", help='Find any recipe, not just where the recipe file itself is in the workspace')
+    parser_find_recipe.set_defaults(func=find_recipe)
 
     # NOTE: Needed to override the usage string here since the default
     # gets the order wrong - recipename must come before --arg

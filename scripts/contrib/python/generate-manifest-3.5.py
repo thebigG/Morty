@@ -13,9 +13,13 @@
 # 2014 Khem Raj <raj.khem@gmail.com>
 # Added python3 support
 #
+# February 26, 2017 -- Ming Liu <peter.x.liu@external.atlascopco.com>
+# * Updated to support generating manifest for native python3
+
 import os
 import sys
 import time
+import argparse
 
 VERSION = "3.5.0"
 
@@ -24,16 +28,17 @@ __version__ = "20140131"
 
 class MakefileMaker:
 
-    def __init__( self, outfile ):
+    def __init__( self, outfile, isNative ):
         """initialize"""
         self.packages = {}
+        self.excluded_pkgs = []
         self.targetPrefix = "${libdir}/python%s/" % VERSION[:3]
+        self.isNative = isNative
         self.output = outfile
         self.out( """
 # WARNING: This file is AUTO GENERATED: Manual edits will be lost next time I regenerate the file.
-# Generator: '%s' Version %s (C) 2002-2010 Michael 'Mickey' Lauer <mlauer@vanille-media.de>
-# Visit the Python for Embedded Systems Site => http://www.Vanille.de/projects/python.spy
-""" % ( sys.argv[0], __version__ ) )
+# Generator: '%s%s' Version %s (C) 2002-2010 Michael 'Mickey' Lauer <mlauer@vanille-media.de>
+""" % ( sys.argv[0], ' --native' if isNative else '', __version__ ) )
 
     #
     # helper functions
@@ -51,7 +56,7 @@ class MakefileMaker:
         self.out( """ """ )
         self.out( "" )
 
-    def addPackage( self, name, description, dependencies, filenames ):
+    def addPackage( self, name, description, dependencies, filenames, mod_exclude = False ):
         """add a package to the Makefile"""
         if type( filenames ) == type( "" ):
             filenames = filenames.split()
@@ -59,14 +64,38 @@ class MakefileMaker:
         for filename in filenames:
             if filename[0] != "$":
                 fullFilenames.append( "%s%s" % ( self.targetPrefix, filename ) )
+                fullFilenames.append( "%s%s" % ( self.targetPrefix,
+                                                 self.pycachePath( filename ) ) )
             else:
                 fullFilenames.append( filename )
+        if mod_exclude:
+            self.excluded_pkgs.append( name )
         self.packages[name] = description, dependencies, fullFilenames
+
+    def pycachePath( self, filename ):
+        dirname = os.path.dirname( filename )
+        basename = os.path.basename( filename )
+        if '.' in basename:
+            return os.path.join( dirname, '__pycache__', basename )
+        else:
+            return os.path.join( dirname, basename, '__pycache__' )
 
     def doBody( self ):
         """generate body of Makefile"""
 
         global VERSION
+
+        #
+        # generate rprovides line for native
+        #
+
+        if self.isNative:
+            pkglist = []
+            for name in ['${PN}-modules'] + sorted(self.packages):
+                pkglist.append('%s-native' % name.replace('${PN}', 'python3'))
+
+            self.out('RPROVIDES += "%s"' % " ".join(pkglist))
+            return
 
         #
         # generate provides line
@@ -134,7 +163,7 @@ class MakefileMaker:
         line = 'RDEPENDS_${PN}-modules="'
 
         for name, data in sorted(self.packages.items()):
-            if name not in ['${PN}-dev', '${PN}-distutils-staticdev']:
+            if name not in ['${PN}-dev', '${PN}-distutils-staticdev'] and name not in self.excluded_pkgs:
                 line += "%s " % name
 
         self.out( "%s \"" % line )
@@ -150,17 +179,21 @@ class MakefileMaker:
         self.doEpilog()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser( description='generate python3 manifest' )
+    parser.add_argument( '-n', '--native', help='generate manifest for native python3', action='store_true' )
+    parser.add_argument( 'outfile', metavar='OUTPUT_FILE', nargs='?', default='', help='Output file (defaults to stdout)' )
+    args = parser.parse_args()
 
-    if len( sys.argv ) > 1:
+    if args.outfile:
         try:
-            os.unlink(sys.argv[1])
+            os.unlink( args.outfile )
         except Exception:
             sys.exc_clear()
-        outfile = open( sys.argv[1], "w" )
+        outfile = open( args.outfile, "w" )
     else:
         outfile = sys.stdout
 
-    m = MakefileMaker( outfile )
+    m = MakefileMaker( outfile, args.native )
 
     # Add packages here. Only specify dlopen-style library dependencies here, no ldd-style dependencies!
     # Parameters: revision, name, description, dependencies, filenames
@@ -174,7 +207,7 @@ if __name__ == "__main__":
     "UserDict.* UserList.* UserString.* " +
     "lib-dynload/binascii.*.so lib-dynload/_struct.*.so lib-dynload/time.*.so " +
     "lib-dynload/xreadlines.*.so types.* platform.* ${bindir}/python* "  + 
-    "_weakrefset.* sysconfig.* _sysconfigdata.* config/Makefile " +
+    "_weakrefset.* sysconfig.* _sysconfigdata.* " +
     "${includedir}/python${PYTHON_BINABI}/pyconfig*.h " +
     "${libdir}/python${PYTHON_MAJMIN}/collections " +
     "${libdir}/python${PYTHON_MAJMIN}/_collections_abc.* " +
@@ -191,7 +224,8 @@ if __name__ == "__main__":
     "${base_libdir}/*.a " +
     "${base_libdir}/*.o " +
     "${datadir}/aclocal " +
-    "${datadir}/pkgconfig " )
+    "${datadir}/pkgconfig " +
+    "config*/Makefile ")
 
     m.addPackage( "${PN}-2to3", "Python automated Python 2 to 3 code translator", "${PN}-core",
     "lib2to3" ) # package
@@ -221,7 +255,7 @@ if __name__ == "__main__":
     "py_compile.* compileall.*" )
 
     m.addPackage( "${PN}-compression", "Python high-level compression support", "${PN}-core ${PN}-codecs ${PN}-importlib ${PN}-threading ${PN}-shell",
-    "gzip.* zipfile.* tarfile.* lib-dynload/bz2.*.so lib-dynload/zlib.*.so" )
+    "gzip.* zipfile.* tarfile.* lib-dynload/bz2.*.so lib-dynload/zlib.*.so bz2.py lzma.py _compression.py" )
 
     m.addPackage( "${PN}-crypt", "Python basic cryptographic and hashing support", "${PN}-core",
     "hashlib.* md5.* sha.* lib-dynload/crypt.*.so lib-dynload/_hashlib.*.so lib-dynload/_sha256.*.so lib-dynload/_sha512.*.so" )
@@ -266,7 +300,7 @@ if __name__ == "__main__":
     "lib-dynload/fcntl.*.so" )
 
     m.addPackage( "${PN}-html", "Python HTML processing support", "${PN}-core",
-    "formatter.* htmlentitydefs.* htmllib.* markupbase.* sgmllib.* HTMLParser.* " )
+    "formatter.* htmlentitydefs.* html htmllib.* markupbase.* sgmllib.* HTMLParser.* " )
 
     m.addPackage( "${PN}-importlib", "Python import implementation library", "${PN}-core ${PN}-lang",
     "importlib imp.*" )
@@ -279,7 +313,7 @@ if __name__ == "__main__":
 
     m.addPackage( "${PN}-io", "Python low-level I/O", "${PN}-core ${PN}-math",
     "lib-dynload/_socket.*.so lib-dynload/_io.*.so lib-dynload/_ssl.*.so lib-dynload/select.*.so lib-dynload/termios.*.so lib-dynload/cStringIO.*.so " +
-    "pipes.* socket.* ssl.* tempfile.* StringIO.* io.* _pyio.*" )
+    "ipaddress.* pipes.* socket.* ssl.* tempfile.* StringIO.* io.* _pyio.*" )
 
     m.addPackage( "${PN}-json", "Python JSON support", "${PN}-core ${PN}-math ${PN}-re",
     "json lib-dynload/_json.*.so" ) # package
@@ -308,18 +342,18 @@ if __name__ == "__main__":
     m.addPackage( "${PN}-multiprocessing", "Python multiprocessing support", "${PN}-core ${PN}-io ${PN}-lang ${PN}-pickle ${PN}-threading ${PN}-ctypes ${PN}-mmap",
     "lib-dynload/_multiprocessing.*.so multiprocessing" ) # package
 
-    m.addPackage( "${PN}-netclient", "Python Internet Protocol clients", "${PN}-core ${PN}-crypt ${PN}-datetime ${PN}-io ${PN}-lang ${PN}-logging ${PN}-mime",
+    m.addPackage( "${PN}-netclient", "Python Internet Protocol clients", "${PN}-argparse ${PN}-core ${PN}-crypt ${PN}-datetime ${PN}-io ${PN}-lang ${PN}-logging ${PN}-mime ${PN}-html",
     "*Cookie*.* " +
-    "base64.* cookielib.* ftplib.* gopherlib.* hmac.* httplib.* mimetypes.* nntplib.* poplib.* smtplib.* telnetlib.* urllib  uuid.* rfc822.* mimetools.*" )
+    "base64.* cookielib.* ftplib.* gopherlib.* hmac.* http* httplib.* mimetypes.* nntplib.* poplib.* smtplib.* telnetlib.* urllib  uuid.* rfc822.* mimetools.*" )
 
     m.addPackage( "${PN}-netserver", "Python Internet Protocol servers", "${PN}-core ${PN}-netclient ${PN}-shell ${PN}-threading",
-    "cgi.* *HTTPServer.* SocketServer.*" )
+    "cgi.* socketserver.* *HTTPServer.* SocketServer.*" )
 
     m.addPackage( "${PN}-numbers", "Python number APIs", "${PN}-core ${PN}-lang ${PN}-re",
     "decimal.* fractions.* numbers.*" )
 
     m.addPackage( "${PN}-pickle", "Python serialisation/persistence support", "${PN}-core ${PN}-codecs ${PN}-io ${PN}-re",
-    "pickle.* shelve.* lib-dynload/cPickle.*.so pickletools.*" )
+    "_compat_pickle.* pickle.* shelve.* lib-dynload/cPickle.*.so pickletools.*" )
 
     m.addPackage( "${PN}-pkgutil", "Python package extension utility support", "${PN}-core",
     "pkgutil.*")
@@ -337,7 +371,7 @@ if __name__ == "__main__":
     "lib-dynload/readline.*.so rlcompleter.*" )
 
     m.addPackage( "${PN}-reprlib", "Python alternate repr() implementation", "${PN}-core",
-    "reprlib.py" )
+    "reprlib.*" )
 
     m.addPackage( "${PN}-resource", "Python resource control interface", "${PN}-core",
     "lib-dynload/resource.*.so" )
@@ -369,14 +403,17 @@ if __name__ == "__main__":
     m.addPackage( "${PN}-terminal", "Python terminal controlling support", "${PN}-core ${PN}-io",
     "pty.* tty.*" )
 
-    m.addPackage( "${PN}-tests", "Python tests", "${PN}-core",
-    "test" ) # package
+    m.addPackage( "${PN}-tests", "Python tests", "${PN}-core ${PN}-compression",
+    "test", True ) # package
 
     m.addPackage( "${PN}-threading", "Python threading & synchronization support", "${PN}-core ${PN}-lang",
     "_threading_local.* dummy_thread.* dummy_threading.* mutex.* threading.* queue.*" )
 
     m.addPackage( "${PN}-tkinter", "Python Tcl/Tk bindings", "${PN}-core",
     "lib-dynload/_tkinter.*.so lib-tk tkinter" ) # package
+
+    m.addPackage( "${PN}-typing", "Python typing support", "${PN}-core",
+    "typing.*" )
 
     m.addPackage( "${PN}-unittest", "Python unit testing framework", "${PN}-core ${PN}-stringold ${PN}-lang ${PN}-io ${PN}-difflib ${PN}-pprint ${PN}-shell",
     "unittest/" )
@@ -387,7 +424,7 @@ if __name__ == "__main__":
     m.addPackage( "${PN}-xml", "Python basic XML support", "${PN}-core ${PN}-re",
     "lib-dynload/_elementtree.*.so lib-dynload/pyexpat.*.so xml xmllib.*" ) # package
 
-    m.addPackage( "${PN}-xmlrpc", "Python XML-RPC support", "${PN}-core ${PN}-xml ${PN}-netserver ${PN}-lang",
+    m.addPackage( "${PN}-xmlrpc", "Python XML-RPC support", "${PN}-core ${PN}-xml ${PN}-netserver ${PN}-lang ${PN}-pydoc",
     "xmlrpclib.* SimpleXMLRPCServer.* DocXMLRPCServer.* xmlrpc" )
 
     m.addPackage( "${PN}-mailbox", "Python mailbox format support", "${PN}-core ${PN}-mime",

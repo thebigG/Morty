@@ -23,6 +23,7 @@ SRC_URI = "git://github.com/akuster/distcc.git;branch=${PV} \
            file://distcc.service"
 SRCREV = "d8b18df3e9dcbe4f092bed565835d3975e99432c"
 S = "${WORKDIR}/git"
+UPSTREAM_VERSION_UNKNOWN = "1"
 
 inherit autotools pkgconfig update-rc.d useradd systemd
 
@@ -40,7 +41,9 @@ INITSCRIPT_NAME = "distcc"
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE_${PN} = "distcc.service"
 
-do_install_append() {
+do_install() {
+    # Improve reproducibility: compress w/o timestamps
+    oe_runmake 'DESTDIR=${D}'  "GZIP_BIN=gzip -n" install
     install -d ${D}${sysconfdir}/init.d/
     install -d ${D}${sysconfdir}/default
     install -m 0755 ${WORKDIR}/distcc ${D}${sysconfdir}/init.d/
@@ -65,7 +68,3 @@ FILES_${PN} = " ${sysconfdir} \
 		${systemd_unitdir}/system/distcc.service"
 FILES_distcc-distmon-gnome = "  ${bindir}/distccmon-gnome \
 				${datadir}/distcc"
-
-pkg_postrm_${PN} () {
-	deluser distcc || true
-}

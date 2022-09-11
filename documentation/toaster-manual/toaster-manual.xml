@@ -22,54 +22,39 @@
 
         <authorgroup>
             <author>
-                <firstname>Scott</firstname> <surname>Rifenbark</surname>
+                <firstname>Kristi</firstname> <surname>Rifenbark</surname>
                 <affiliation>
-                    <orgname>Intel Corporation</orgname>
+                    <orgname>Scotty's Documentation Services, INC</orgname>
                 </affiliation>
-                <email>srifenbark@gmail.com</email>
+                <email>kristi@buzzcollectivemarketing.com</email>
             </author>
         </authorgroup>
 
         <revhistory>
             <revision>
-                <revnumber>1.8</revnumber>
-                <date>April 2015</date>
-                <revremark>Released with the Yocto Project 1.8 Release.</revremark>
+                <revnumber>2.4</revnumber>
+                <date>October 2017</date>
+                <revremark>Released with the Yocto Project 2.4 Release.</revremark>
             </revision>
             <revision>
-                <revnumber>2.0</revnumber>
-                <date>October 2015</date>
-                <revremark>Released with the Yocto Project 2.0 Release.</revremark>
+                <revnumber>2.4.1</revnumber>
+                <date>January 2018</date>
+                <revremark>Released with the Yocto Project 2.4.1 Release.</revremark>
             </revision>
             <revision>
-                <revnumber>2.1</revnumber>
-                <date>April 2016</date>
-                <revremark>Released with the Yocto Project 2.1 Release.</revremark>
+                <revnumber>2.4.2</revnumber>
+                <date>March 2018</date>
+                <revremark>Released with the Yocto Project 2.4.2 Release.</revremark>
             </revision>
             <revision>
-                <revnumber>2.2</revnumber>
-                <date>October 2016</date>
-                <revremark>Released with the Yocto Project 2.2 Release.</revremark>
+                <revnumber>2.4.3</revnumber>
+                <date>June 2018</date>
+                <revremark>Released with the Yocto Project 2.4.3 Release.</revremark>
             </revision>
             <revision>
-                <revnumber>2.2.1</revnumber>
-                <date>January 2017</date>
-                <revremark>Released with the Yocto Project 2.2.1 Release.</revremark>
-            </revision>
-            <revision>
-                <revnumber>2.2.2</revnumber>
-                <date>June 2017</date>
-                <revremark>Released with the Yocto Project 2.2.2 Release.</revremark>
-            </revision>
-            <revision>
-                <revnumber>2.2.3</revnumber>
-                <date>December 2017</date>
-                <revremark>Released with the Yocto Project 2.2.3 Release.</revremark>
-            </revision>
-            <revision>
-                <revnumber>2.2.4</revnumber>
-                <date>July 2018</date>
-                <revremark>Released with the Yocto Project 2.2.4 Release.</revremark>
+                <revnumber>2.4.4</revnumber>
+                <date>&REL_MONTH_YEAR;</date>
+                <revremark>Released with the Yocto Project 2.4.4 Release.</revremark>
             </revision>
        </revhistory>
 

@@ -10,7 +10,7 @@ import traceback
 def generate_locale_archive(d, rootfs):
     # Pretty sure we don't need this for SDK archive generation but
     # keeping it to be safe...
-    target_arch = d.getVar('SDK_ARCH', True)
+    target_arch = d.getVar('SDK_ARCH')
     locale_arch_options = { \
         "arm": ["--uint32-align=4", "--little-endian"],
         "armeb": ["--uint32-align=4", "--big-endian"],
@@ -37,7 +37,7 @@ def generate_locale_archive(d, rootfs):
         bb.error("locale_arch_options not found for target_arch=" + target_arch)
         bb.fatal("unknown arch:" + target_arch + " for locale_arch_options")
 
-    localedir = oe.path.join(rootfs, d.getVar("libdir_nativesdk", True), "locale")
+    localedir = oe.path.join(rootfs, d.getVar("libdir_nativesdk"), "locale")
     # Need to set this so cross-localedef knows where the archive is
     env = dict(os.environ)
     env["LOCALEARCHIVE"] = oe.path.join(localedir, "locale-archive")
@@ -56,16 +56,16 @@ def generate_locale_archive(d, rootfs):
 class Sdk(object, metaclass=ABCMeta):
     def __init__(self, d, manifest_dir):
         self.d = d
-        self.sdk_output = self.d.getVar('SDK_OUTPUT', True)
-        self.sdk_native_path = self.d.getVar('SDKPATHNATIVE', True).strip('/')
-        self.target_path = self.d.getVar('SDKTARGETSYSROOT', True).strip('/')
-        self.sysconfdir = self.d.getVar('sysconfdir', True).strip('/')
+        self.sdk_output = self.d.getVar('SDK_OUTPUT')
+        self.sdk_native_path = self.d.getVar('SDKPATHNATIVE').strip('/')
+        self.target_path = self.d.getVar('SDKTARGETSYSROOT').strip('/')
+        self.sysconfdir = self.d.getVar('sysconfdir').strip('/')
 
         self.sdk_target_sysroot = os.path.join(self.sdk_output, self.target_path)
         self.sdk_host_sysroot = self.sdk_output
 
         if manifest_dir is None:
-            self.manifest_dir = self.d.getVar("SDK_DIR", True)
+            self.manifest_dir = self.d.getVar("SDK_DIR")
         else:
             self.manifest_dir = manifest_dir
 
@@ -85,12 +85,12 @@ class Sdk(object, metaclass=ABCMeta):
 
         # Don't ship any libGL in the SDK
         self.remove(os.path.join(self.sdk_output, self.sdk_native_path,
-                         self.d.getVar('libdir_nativesdk', True).strip('/'),
+                         self.d.getVar('libdir_nativesdk').strip('/'),
                          "libGL*"))
 
         # Fix or remove broken .la files
         self.remove(os.path.join(self.sdk_output, self.sdk_native_path,
-                         self.d.getVar('libdir_nativesdk', True).strip('/'),
+                         self.d.getVar('libdir_nativesdk').strip('/'),
                          "*.la"))
 
         # Link the ld.so.cache file into the hosts filesystem
@@ -99,7 +99,7 @@ class Sdk(object, metaclass=ABCMeta):
         self.mkdirhier(os.path.dirname(link_name))
         os.symlink("/etc/ld.so.cache", link_name)
 
-        execute_pre_post_process(self.d, self.d.getVar('SDK_POSTPROCESS_COMMAND', True))
+        execute_pre_post_process(self.d, self.d.getVar('SDK_POSTPROCESS_COMMAND'))
 
     def movefile(self, sourcefile, destdir):
         try:
@@ -131,10 +131,10 @@ class Sdk(object, metaclass=ABCMeta):
 
     def install_locales(self, pm):
         # This is only relevant for glibc
-        if self.d.getVar("TCLIBC", True) != "glibc":
+        if self.d.getVar("TCLIBC") != "glibc":
             return
 
-        linguas = self.d.getVar("SDKIMAGE_LINGUAS", True)
+        linguas = self.d.getVar("SDKIMAGE_LINGUAS")
         if linguas:
             import fnmatch
             # Install the binary locales
@@ -147,7 +147,7 @@ class Sdk(object, metaclass=ABCMeta):
             generate_locale_archive(self.d, oe.path.join(self.sdk_host_sysroot, self.sdk_native_path))
             # And now delete the binary locales
             pkgs = fnmatch.filter(pm.list_installed(), "nativesdk-glibc-binary-localedata-*.utf-8")
-            pm.remove(pkgs, with_dependencies=False)
+            pm.remove(pkgs)
         else:
             # No linguas so do nothing
             pass
@@ -170,13 +170,13 @@ class RpmSdk(Sdk):
                               ]
 
         rpm_repo_workdir = "oe-sdk-repo"
-        if "sdk_ext" in d.getVar("BB_RUNTASK", True):
+        if "sdk_ext" in d.getVar("BB_RUNTASK"):
             rpm_repo_workdir = "oe-sdk-ext-repo"
 
 
         self.target_pm = RpmPM(d,
                                self.sdk_target_sysroot,
-                               self.d.getVar('TARGET_VENDOR', True),
+                               self.d.getVar('TARGET_VENDOR'),
                                'target',
                                target_providename,
                                rpm_repo_workdir=rpm_repo_workdir
@@ -193,7 +193,7 @@ class RpmSdk(Sdk):
 
         self.host_pm = RpmPM(d,
                              self.sdk_host_sysroot,
-                             self.d.getVar('SDK_VENDOR', True),
+                             self.d.getVar('SDK_VENDOR'),
                              'host',
                              sdk_providename,
                              "SDK_PACKAGE_ARCHS",
@@ -206,7 +206,6 @@ class RpmSdk(Sdk):
 
         pm.create_configs()
         pm.write_index()
-        pm.dump_all_available_pkgs()
         pm.update()
 
         pkgs = []
@@ -222,12 +221,14 @@ class RpmSdk(Sdk):
         pm.install(pkgs_attempt, True)
 
     def _populate(self):
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_PRE_TARGET_COMMAND"))
+
         bb.note("Installing TARGET packages")
         self._populate_sysroot(self.target_pm, self.target_manifest)
 
-        self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY', True))
+        self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY'))
 
-        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND", True))
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND"))
 
         if not bb.utils.contains("SDKIMAGE_FEATURES", "package-management", True, False, self.d):
             self.target_pm.remove_packaging_data()
@@ -236,7 +237,7 @@ class RpmSdk(Sdk):
         self._populate_sysroot(self.host_pm, self.host_manifest)
         self.install_locales(self.host_pm)
 
-        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND", True))
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND"))
 
         if not bb.utils.contains("SDKIMAGE_FEATURES", "package-management", True, False, self.d):
             self.host_pm.remove_packaging_data()
@@ -244,7 +245,7 @@ class RpmSdk(Sdk):
         # Move host RPM library data
         native_rpm_state_dir = os.path.join(self.sdk_output,
                                             self.sdk_native_path,
-                                            self.d.getVar('localstatedir_nativesdk', True).strip('/'),
+                                            self.d.getVar('localstatedir_nativesdk').strip('/'),
                                             "lib",
                                             "rpm"
                                             )
@@ -265,7 +266,9 @@ class RpmSdk(Sdk):
                                                         True).strip('/'),
                                           )
         self.mkdirhier(native_sysconf_dir)
-        for f in glob.glob(os.path.join(self.sdk_output, "etc", "*")):
+        for f in glob.glob(os.path.join(self.sdk_output, "etc", "rpm*")):
+            self.movefile(f, native_sysconf_dir)
+        for f in glob.glob(os.path.join(self.sdk_output, "etc", "dnf", "*")):
             self.movefile(f, native_sysconf_dir)
         self.remove(os.path.join(self.sdk_output, "etc"), True)
 
@@ -274,8 +277,8 @@ class OpkgSdk(Sdk):
     def __init__(self, d, manifest_dir=None):
         super(OpkgSdk, self).__init__(d, manifest_dir)
 
-        self.target_conf = self.d.getVar("IPKGCONF_TARGET", True)
-        self.host_conf = self.d.getVar("IPKGCONF_SDK", True)
+        self.target_conf = self.d.getVar("IPKGCONF_TARGET")
+        self.host_conf = self.d.getVar("IPKGCONF_SDK")
 
         self.target_manifest = OpkgManifest(d, self.manifest_dir,
                                             Manifest.MANIFEST_TYPE_SDK_TARGET)
@@ -283,15 +286,15 @@ class OpkgSdk(Sdk):
                                           Manifest.MANIFEST_TYPE_SDK_HOST)
 
         self.target_pm = OpkgPM(d, self.sdk_target_sysroot, self.target_conf,
-                                self.d.getVar("ALL_MULTILIB_PACKAGE_ARCHS", True))
+                                self.d.getVar("ALL_MULTILIB_PACKAGE_ARCHS"))
 
         self.host_pm = OpkgPM(d, self.sdk_host_sysroot, self.host_conf,
-                              self.d.getVar("SDK_PACKAGE_ARCHS", True))
+                              self.d.getVar("SDK_PACKAGE_ARCHS"))
 
     def _populate_sysroot(self, pm, manifest):
         pkgs_to_install = manifest.parse_initial_manifest()
 
-        if (self.d.getVar('BUILD_IMAGES_FROM_FEEDS', True) or "") != "1":
+        if (self.d.getVar('BUILD_IMAGES_FROM_FEEDS') or "") != "1":
             pm.write_index()
 
         pm.update()
@@ -302,12 +305,14 @@ class OpkgSdk(Sdk):
                            [False, True][pkg_type == Manifest.PKG_TYPE_ATTEMPT_ONLY])
 
     def _populate(self):
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_PRE_TARGET_COMMAND"))
+
         bb.note("Installing TARGET packages")
         self._populate_sysroot(self.target_pm, self.target_manifest)
 
-        self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY', True))
+        self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY'))
 
-        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND", True))
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND"))
 
         if not bb.utils.contains("SDKIMAGE_FEATURES", "package-management", True, False, self.d):
             self.target_pm.remove_packaging_data()
@@ -316,7 +321,7 @@ class OpkgSdk(Sdk):
         self._populate_sysroot(self.host_pm, self.host_manifest)
         self.install_locales(self.host_pm)
 
-        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND", True))
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND"))
 
         if not bb.utils.contains("SDKIMAGE_FEATURES", "package-management", True, False, self.d):
             self.host_pm.remove_packaging_data()
@@ -335,7 +340,7 @@ class OpkgSdk(Sdk):
                               os.path.basename(self.host_conf)), 0o644)
 
         native_opkg_state_dir = os.path.join(self.sdk_output, self.sdk_native_path,
-                                             self.d.getVar('localstatedir_nativesdk', True).strip('/'),
+                                             self.d.getVar('localstatedir_nativesdk').strip('/'),
                                              "lib", "opkg")
         self.mkdirhier(native_opkg_state_dir)
         for f in glob.glob(os.path.join(self.sdk_output, "var", "lib", "opkg", "*")):
@@ -348,8 +353,8 @@ class DpkgSdk(Sdk):
     def __init__(self, d, manifest_dir=None):
         super(DpkgSdk, self).__init__(d, manifest_dir)
 
-        self.target_conf_dir = os.path.join(self.d.getVar("APTCONF_TARGET", True), "apt")
-        self.host_conf_dir = os.path.join(self.d.getVar("APTCONF_TARGET", True), "apt-sdk")
+        self.target_conf_dir = os.path.join(self.d.getVar("APTCONF_TARGET"), "apt")
+        self.host_conf_dir = os.path.join(self.d.getVar("APTCONF_TARGET"), "apt-sdk")
 
         self.target_manifest = DpkgManifest(d, self.manifest_dir,
                                             Manifest.MANIFEST_TYPE_SDK_TARGET)
@@ -357,17 +362,17 @@ class DpkgSdk(Sdk):
                                           Manifest.MANIFEST_TYPE_SDK_HOST)
 
         self.target_pm = DpkgPM(d, self.sdk_target_sysroot,
-                                self.d.getVar("PACKAGE_ARCHS", True),
-                                self.d.getVar("DPKG_ARCH", True),
+                                self.d.getVar("PACKAGE_ARCHS"),
+                                self.d.getVar("DPKG_ARCH"),
                                 self.target_conf_dir)
 
         self.host_pm = DpkgPM(d, self.sdk_host_sysroot,
-                              self.d.getVar("SDK_PACKAGE_ARCHS", True),
-                              self.d.getVar("DEB_SDK_ARCH", True),
+                              self.d.getVar("SDK_PACKAGE_ARCHS"),
+                              self.d.getVar("DEB_SDK_ARCH"),
                               self.host_conf_dir)
 
     def _copy_apt_dir_to(self, dst_dir):
-        staging_etcdir_native = self.d.getVar("STAGING_ETCDIR_NATIVE", True)
+        staging_etcdir_native = self.d.getVar("STAGING_ETCDIR_NATIVE")
 
         self.remove(dst_dir, True)
 
@@ -385,12 +390,14 @@ class DpkgSdk(Sdk):
                            [False, True][pkg_type == Manifest.PKG_TYPE_ATTEMPT_ONLY])
 
     def _populate(self):
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_PRE_TARGET_COMMAND"))
+
         bb.note("Installing TARGET packages")
         self._populate_sysroot(self.target_pm, self.target_manifest)
 
-        self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY', True))
+        self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY'))
 
-        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND", True))
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND"))
 
         self._copy_apt_dir_to(os.path.join(self.sdk_target_sysroot, "etc", "apt"))
 
@@ -401,7 +408,7 @@ class DpkgSdk(Sdk):
         self._populate_sysroot(self.host_pm, self.host_manifest)
         self.install_locales(self.host_pm)
 
-        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND", True))
+        execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND"))
 
         self._copy_apt_dir_to(os.path.join(self.sdk_output, self.sdk_native_path,
                                            "etc", "apt"))
@@ -420,26 +427,26 @@ class DpkgSdk(Sdk):
 
 def sdk_list_installed_packages(d, target, rootfs_dir=None):
     if rootfs_dir is None:
-        sdk_output = d.getVar('SDK_OUTPUT', True)
-        target_path = d.getVar('SDKTARGETSYSROOT', True).strip('/')
+        sdk_output = d.getVar('SDK_OUTPUT')
+        target_path = d.getVar('SDKTARGETSYSROOT').strip('/')
 
         rootfs_dir = [sdk_output, os.path.join(sdk_output, target_path)][target is True]
 
-    img_type = d.getVar('IMAGE_PKGTYPE', True)
+    img_type = d.getVar('IMAGE_PKGTYPE')
     if img_type == "rpm":
         arch_var = ["SDK_PACKAGE_ARCHS", None][target is True]
         os_var = ["SDK_OS", None][target is True]
-        return RpmPkgsList(d, rootfs_dir, arch_var, os_var).list_pkgs()
+        return RpmPkgsList(d, rootfs_dir).list_pkgs()
     elif img_type == "ipk":
         conf_file_var = ["IPKGCONF_SDK", "IPKGCONF_TARGET"][target is True]
-        return OpkgPkgsList(d, rootfs_dir, d.getVar(conf_file_var, True)).list_pkgs()
+        return OpkgPkgsList(d, rootfs_dir, d.getVar(conf_file_var)).list_pkgs()
     elif img_type == "deb":
         return DpkgPkgsList(d, rootfs_dir).list_pkgs()
 
 def populate_sdk(d, manifest_dir=None):
     env_bkp = os.environ.copy()
 
-    img_type = d.getVar('IMAGE_PKGTYPE', True)
+    img_type = d.getVar('IMAGE_PKGTYPE')
     if img_type == "rpm":
         RpmSdk(d, manifest_dir).populate()
     elif img_type == "ipk":
@@ -449,6 +456,25 @@ def populate_sdk(d, manifest_dir=None):
 
     os.environ.clear()
     os.environ.update(env_bkp)
+
+def get_extra_sdkinfo(sstate_dir):
+    """
+    This function is going to be used for generating the target and host manifest files packages of eSDK.
+    """
+    import math
+    
+    extra_info = {}
+    extra_info['tasksizes'] = {}
+    extra_info['filesizes'] = {}
+    for root, _, files in os.walk(sstate_dir):
+        for fn in files:
+            if fn.endswith('.tgz'):
+                fsize = int(math.ceil(float(os.path.getsize(os.path.join(root, fn))) / 1024))
+                task = fn.rsplit(':',1)[1].split('_',1)[1].split(',')[0]
+                origtotal = extra_info['tasksizes'].get(task, 0)
+                extra_info['tasksizes'][task] = origtotal + fsize
+                extra_info['filesizes'][fn] = fsize
+    return extra_info
 
 if __name__ == "__main__":
     pass

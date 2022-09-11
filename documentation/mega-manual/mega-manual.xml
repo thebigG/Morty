@@ -33,7 +33,7 @@
             <author>
                 <firstname>Scott</firstname> <surname>Rifenbark</surname>
                 <affiliation>
-                    <orgname>Intel Corporation</orgname>
+                    <orgname>Scotty's Documentation Services, INC</orgname>
                 </affiliation>
                 <email>srifenbark@gmail.com</email>
             </author>
@@ -41,44 +41,29 @@
 
         <revhistory>
             <revision>
-                <revnumber>1.8</revnumber>
-                <date>April 2015</date>
-                <revremark>Released with the Yocto Project 1.8 Release.</revremark>
+                <revnumber>2.4</revnumber>
+                <date>October 2017</date>
+                <revremark>Released with the Yocto Project 2.4 Release.</revremark>
             </revision>
             <revision>
-                <revnumber>2.0</revnumber>
-                <date>October 2015</date>
-                <revremark>Released with the Yocto Project 2.0 Release.</revremark>
+                <revnumber>2.4.1</revnumber>
+                <date>January 2018</date>
+                <revremark>Released with the Yocto Project 2.4.1 Release.</revremark>
             </revision>
             <revision>
-                <revnumber>2.1</revnumber>
-                <date>April 2016</date>
-                <revremark>Released with the Yocto Project 2.1 Release.</revremark>
+                <revnumber>2.4.2</revnumber>
+                <date>March 2018</date>
+                <revremark>Released with the Yocto Project 2.4.2 Release.</revremark>
             </revision>
             <revision>
-                <revnumber>2.2</revnumber>
-                <date>October 2016</date>
-                <revremark>Released with the Yocto Project 2.2 Release.</revremark>
+                <revnumber>2.4.3</revnumber>
+                <date>June 2018</date>
+                <revremark>Released with the Yocto Project 2.4.3 Release.</revremark>
             </revision>
             <revision>
-                <revnumber>2.2.1</revnumber>
-                <date>January 2017</date>
-                <revremark>Released with the Yocto Project 2.2.1 Release.</revremark>
-            </revision>
-            <revision>
-                <revnumber>2.2.2</revnumber>
-                <date>June 2017</date>
-                <revremark>Released with the Yocto Project 2.2.2 Release.</revremark>
-            </revision>
-            <revision>
-                <revnumber>2.2.3</revnumber>
-                <date>December 2017</date>
-                <revremark>Released with the Yocto Project 2.2.3 Release.</revremark>
-            </revision>
-            <revision>
-                <revnumber>2.2.4</revnumber>
-                <date>July 2018</date>
-                <revremark>Released with the Yocto Project 2.2.4 Release.</revremark>
+                <revnumber>2.4.4</revnumber>
+                <date>&REL_MONTH_YEAR;</date>
+                <revremark>Released with the Yocto Project 2.4.4 Release.</revremark>
             </revision>
        </revhistory>
 
@@ -155,8 +140,6 @@
     <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../dev-manual/dev-manual-newbie.xml"/>
     <xi:include
-        xmlns:xi="http://www.w3.org/2003/XInclude" href="../dev-manual/dev-manual-model.xml"/>
-    <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../dev-manual/dev-manual-common-tasks.xml"/>
     <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../dev-manual/dev-manual-qemu.xml"/>
@@ -175,6 +158,8 @@
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../sdk-manual/sdk-using.xml"/>
     <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../sdk-manual/sdk-working-projects.xml"/>
+    <xi:include
+        xmlns:xi="http://www.w3.org/2003/XInclude" href="../sdk-manual/sdk-eclipse-project.xml"/>
     <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../sdk-manual/sdk-appendix-obtain.xml"/>
     <xi:include
@@ -238,10 +223,13 @@
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/usingpoky.xml"/>
 
     <xi:include
-        xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/closer-look.xml"/>
+        xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/ref-development-environment.xml"/>
 
     <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/technical-details.xml"/>
+
+    <xi:include
+        xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/ref-release-process.xml"/>
 
     <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/migration.xml"/>
@@ -257,6 +245,9 @@
 
     <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/ref-devtool-reference.xml"/>
+
+    <xi:include
+        xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/ref-kickstart.xml"/>
 
     <xi:include
         xmlns:xi="http://www.w3.org/2003/XInclude" href="../ref-manual/ref-qa-checks.xml"/>

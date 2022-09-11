@@ -6,17 +6,23 @@ LICENSE = "BSD | Artistic-1.0"
 LIC_FILES_CHKSUM = "file://COPYING;md5=ed80ff1c2b40843cf5768e5229cf16e5 \
                     file://src/passwd.c;beginline=8;endline=30;md5=d83888ea14ae61951982d77125947661"
 
-DEPENDS = "shadow-native"
 DEPENDS_class-native = ""
 DEPENDS_class-nativesdk = ""
 
-SRC_URI = "http://pkg-shadow.alioth.debian.org/releases/${BPN}-${PV}.tar.xz \
+UPSTREAM_CHECK_URI = "https://github.com/shadow-maint/shadow/releases"
+
+SRC_URI = "https://downloads.yoctoproject.org/mirror/sources/${BP}.tar.xz \
            file://shadow-4.1.3-dots-in-usernames.patch \
            file://usermod-fix-compilation-failure-with-subids-disabled.patch \
            file://fix-installation-failure-with-subids-disabled.patch \
            file://0001-Do-not-read-login.defs-before-doing-chroot.patch \
            file://check_size_of_uid_t_and_gid_t_using_AC_CHECK_SIZEOF.patch \
+           file://0001-useradd-copy-extended-attributes-of-home.patch \
+           file://0001-shadow-CVE-2017-12424 \
+           file://CVE-2017-2616.patch \
            ${@bb.utils.contains('PACKAGECONFIG', 'pam', '${PAM_SRC_URI}', '', d)} \
+           file://CVE-2018-7169.patch \
+           file://CVE-2016-6252.patch \
            "
 
 SRC_URI_append_class-target = " \
@@ -59,7 +65,6 @@ EXTRA_OECONF += "--without-audit \
 NSCDOPT = ""
 NSCDOPT_class-native = "--without-nscd"
 NSCDOPT_class-nativesdk = "--without-nscd"
-NSCDOPT_libc-uclibc = " --without-nscd"
 NSCDOPT_libc-glibc = "${@bb.utils.contains('DISTRO_FEATURES', 'libc-spawn', '--with-nscd', '--without-nscd', d)}"
           
 PAM_PLUGINS = "libpam-runtime \
@@ -75,8 +80,9 @@ PAM_PLUGINS = "libpam-runtime \
                pam-plugin-shells \
                pam-plugin-rootok"
 
-PACKAGECONFIG = "${@bb.utils.contains('DISTRO_FEATURES', 'pam', 'pam', '', d)}"
-PACKAGECONFIG_class-native = ""
+PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'pam', d)} \
+                   ${@bb.utils.contains('DISTRO_FEATURES', 'xattr', 'attr', '', d)}"
+PACKAGECONFIG_class-native ??= "${@bb.utils.contains('DISTRO_FEATURES', 'xattr', 'attr', '', d)}"
 PACKAGECONFIG_class-nativesdk = ""
 PACKAGECONFIG[pam] = "--with-libpam,--without-libpam,libpam,${PAM_PLUGINS}"
 PACKAGECONFIG[attr] = "--with-attr,--without-attr,attr"
@@ -127,7 +133,8 @@ do_install_append() {
 	# Ensure that the image has as a /var/spool/mail dir so shadow can
 	# put mailboxes there if the user reconfigures shadow to its
 	# defaults (see sed below).
-	install -d ${D}${localstatedir}/spool/mail
+	install -m 0775 -d ${D}${localstatedir}/spool/mail
+	chown root:mail ${D}${localstatedir}/spool/mail
 
 	if [ -e ${WORKDIR}/pam.d ]; then
 		install -d ${D}${sysconfdir}/pam.d/
@@ -171,10 +178,11 @@ inherit update-alternatives
 
 ALTERNATIVE_PRIORITY = "200"
 
-ALTERNATIVE_${PN} = "passwd chfn chsh chpasswd vipw vigr"
+ALTERNATIVE_${PN} = "passwd chfn chsh chpasswd vipw vigr nologin"
 ALTERNATIVE_LINK_NAME[chpasswd] = "${sbindir}/chpasswd"
 ALTERNATIVE_LINK_NAME[vipw] = "${base_sbindir}/vipw"
 ALTERNATIVE_LINK_NAME[vigr] = "${base_sbindir}/vigr"
+ALTERNATIVE_LINK_NAME[nologin] = "${base_sbindir}/nologin"
 
 ALTERNATIVE_${PN}-base = "newgrp groups login su"
 ALTERNATIVE_LINK_NAME[login] = "${base_bindir}/login"
@@ -187,6 +195,7 @@ ALTERNATIVE_LINK_NAME[groups.1] = "${mandir}/man1/groups.1"
 ALTERNATIVE_LINK_NAME[su.1] = "${mandir}/man1/su.1"
 ALTERNATIVE_LINK_NAME[nologin.8] = "${mandir}/man8/nologin.8"
 
+PACKAGE_WRITE_DEPS += "shadow-native"
 pkg_postinst_${PN} () {
 	if [ "x$D" != "x" ]; then
 	  rootarg="--root $D"

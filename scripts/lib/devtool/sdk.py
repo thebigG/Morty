@@ -132,9 +132,9 @@ def sdk_update(args, config, basepath, workspace):
     # Grab variable values
     tinfoil = setup_tinfoil(config_only=True, basepath=basepath)
     try:
-        stamps_dir = tinfoil.config_data.getVar('STAMPS_DIR', True)
-        sstate_mirrors = tinfoil.config_data.getVar('SSTATE_MIRRORS', True)
-        site_conf_version = tinfoil.config_data.getVar('SITE_CONF_VERSION', True)
+        stamps_dir = tinfoil.config_data.getVar('STAMPS_DIR')
+        sstate_mirrors = tinfoil.config_data.getVar('SSTATE_MIRRORS')
+        site_conf_version = tinfoil.config_data.getVar('SITE_CONF_VERSION')
     finally:
         tinfoil.shutdown()
 
@@ -145,6 +145,9 @@ def sdk_update(args, config, basepath, workspace):
         # Fetch manifest from server
         tmpmanifest = os.path.join(tmpsdk_dir, 'conf', 'sdk-conf-manifest')
         ret = subprocess.call("wget -q -O %s %s/conf/sdk-conf-manifest" % (tmpmanifest, updateserver), shell=True)
+        if ret != 0:
+            logger.error("Cannot dowload files from %s" % updateserver)
+            return ret
         changedfiles = check_manifest(tmpmanifest, basepath)
         if not changedfiles:
             logger.info("Already up-to-date")
@@ -155,7 +158,7 @@ def sdk_update(args, config, basepath, workspace):
         if os.path.exists(os.path.join(basepath, 'layers/.git')):
             out = subprocess.check_output("git status --porcelain", shell=True, cwd=layers_dir)
             if not out:
-                ret = subprocess.call("git fetch --all; git reset --hard", shell=True, cwd=layers_dir)
+                ret = subprocess.call("git fetch --all; git reset --hard @{u}", shell=True, cwd=layers_dir)
             else:
                 logger.error("Failed to update metadata as there have been changes made to it. Aborting.");
                 logger.error("Changed files:\n%s" % out);
@@ -273,7 +276,7 @@ def sdk_install(args, config, basepath, workspace):
             rd = parse_recipe(config, tinfoil, recipe, True)
             if not rd:
                 return 1
-            stampprefixes[recipe] = '%s.%s' % (rd.getVar('STAMP', True), tasks[0])
+            stampprefixes[recipe] = '%s.%s' % (rd.getVar('STAMP'), tasks[0])
             if checkstamp(recipe):
                 logger.info('%s is already installed' % recipe)
             else:
@@ -305,6 +308,12 @@ def sdk_install(args, config, basepath, workspace):
                 failed = True
         if failed:
             return 2
+
+        try:
+            exec_build_env_command(config.init_path, basepath, 'bitbake build-sysroots', watch=True)
+        except bb.process.ExecutionError as e:
+            raise DevtoolError('Failed to bitbake build-sysroots:\n%s' % (str(e)))
+
 
 def register_commands(subparsers, context):
     """Register devtool subcommands from the sdk plugin"""

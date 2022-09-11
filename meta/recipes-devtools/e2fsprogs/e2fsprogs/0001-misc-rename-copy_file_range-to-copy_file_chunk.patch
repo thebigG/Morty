@@ -1,4 +1,4 @@
-From 10e2247f7b4692e80d185bb65ea641585bdc6b4d Mon Sep 17 00:00:00 2001
+From 647353f7c3fd29e1ffd468d7ff56d9643047ab35 Mon Sep 17 00:00:00 2001
 From: Palmer Dabbelt <palmer@dabbelt.com>
 Date: Fri, 29 Dec 2017 10:19:51 -0800
 Subject: [PATCH] misc: rename copy_file_range to copy_file_chunk
@@ -18,10 +18,10 @@ Signed-off-by: Tanu Kaskinen <tanuk@iki.fi>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/misc/create_inode.c b/misc/create_inode.c
-index c879a3ec..6acf0e20 100644
+index 8ce3fafa..cd89146f 100644
 --- a/misc/create_inode.c
 +++ b/misc/create_inode.c
-@@ -392,7 +392,7 @@ static ssize_t my_pread(int fd, void *buf, size_t count, off_t offset)
+@@ -396,7 +396,7 @@ static ssize_t my_pread(int fd, void *buf, size_t count, off_t offset)
  }
  #endif /* !defined HAVE_PREAD64 && !defined HAVE_PREAD */
  
@@ -30,7 +30,7 @@ index c879a3ec..6acf0e20 100644
  				 off_t start, off_t end, char *buf,
  				 char *zerobuf)
  {
-@@ -466,7 +466,7 @@ static errcode_t try_lseek_copy(ext2_filsys fs, int fd, struct stat *statbuf,
+@@ -470,7 +470,7 @@ static errcode_t try_lseek_copy(ext2_filsys fs, int fd, struct stat *statbuf,
  
  		data_blk = data & ~(fs->blocksize - 1);
  		hole_blk = (hole + (fs->blocksize - 1)) & ~(fs->blocksize - 1);
@@ -39,8 +39,8 @@ index c879a3ec..6acf0e20 100644
  				      zerobuf);
  		if (err)
  			return err;
-@@ -518,7 +518,7 @@ static errcode_t try_fiemap_copy(ext2_filsys fs, int fd, ext2_file_t e2_file,
- 		}
+@@ -521,7 +521,7 @@ static errcode_t try_fiemap_copy(ext2_filsys fs, int fd, ext2_file_t e2_file,
+ 			goto out;
  		for (i = 0, ext = ext_buf; i < fiemap_buf->fm_mapped_extents;
  		     i++, ext++) {
 -			err = copy_file_range(fs, fd, e2_file, ext->fe_logical,
@@ -48,9 +48,9 @@ index c879a3ec..6acf0e20 100644
  					      ext->fe_logical + ext->fe_length,
  					      buf, zerobuf);
  			if (err)
-@@ -569,7 +569,7 @@ static errcode_t copy_file(ext2_filsys fs, int fd, struct stat *statbuf,
- 	if (err != EXT2_ET_UNIMPLEMENTED)
+@@ -574,7 +574,7 @@ static errcode_t copy_file(ext2_filsys fs, int fd, struct stat *statbuf,
  		goto out;
+ #endif
  
 -	err = copy_file_range(fs, fd, e2_file, 0, statbuf->st_size, buf,
 +	err = copy_file_chunk(fs, fd, e2_file, 0, statbuf->st_size, buf,

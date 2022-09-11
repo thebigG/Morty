@@ -2,8 +2,6 @@ DESCRIPTION = "SDK type target for building a standalone tarball containing pyth
                tarball can be used to run bitbake builds on systems which don't meet the usual version requirements."
 SUMMARY = "Standalone tarball for running builds on systems with inadequate software"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d690 \
-                    file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
 TOOLCHAIN_TARGET_TASK ?= ""
 
@@ -47,8 +45,6 @@ inherit toolchain-scripts-base
 inherit nopackages
 
 deltask install
-deltask package
-deltask packagedata
 deltask populate_sysroot
 
 do_populate_sdk[stamp-extra-info] = "${PACKAGE_ARCH}"

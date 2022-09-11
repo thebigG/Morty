@@ -1,6 +1,6 @@
-[submodule "meta-xilinx"]
-	path = meta-xilinx
-	url = git@github.com:thebigG/meta-xilinx.git
 [submodule "meta-openembedded"]
 	path = meta-openembedded
-	url = git@github.com:openembedded/meta-openembedded.git
+	url = https://github.com/openembedded/meta-openembedded.git
+[submodule "meta-xilinx"]
+	path = meta-xilinx
+	url = https://github.com/thebigG/meta-xilinx.git
