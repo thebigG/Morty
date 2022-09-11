@@ -13,6 +13,7 @@ RUN locale-gen en_US.UTF-8
 
 # Ensure that we always use UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+#USER lgomez
 
 #RUN cd /yocto && git clone git://git.yoctoproject.org/poky
 #RUN cd /yocto/poky && git checkout sumo
