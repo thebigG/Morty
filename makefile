@@ -36,6 +36,17 @@ boot-bin:
 boot-bin-split:
 	@/opt/Xilinx/SDK/2016.2/bin/bootgen -split bin -w -image hw_config/zedboard.bif  -arch zynq
 
+
+build-container:
+	@docker build -t yocto:rocko -f conf/Dockerfile .
+
+login:
+	docker login
+push-container: login build-container
+	docker tag yocto:rocko thebigg1/yocto:rocko
+	docker push thebigg1/yocto:rocko
+
+
 #For the tftp server you need to add `/etc/default/tftp-hpa`:
 #TFTP_USERNAME="lgomez"
 #TFTP_DIRECTORY="/tftpboot"

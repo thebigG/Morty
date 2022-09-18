@@ -10,6 +10,7 @@ meta-*/
 !meta-skeleton
 !meta-selftest
 !meta-gpio
+!meta-gpedals-bsp
 hob-image-*.bb
 *.swp
 *.orig
