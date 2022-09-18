@@ -15,7 +15,15 @@ RUN locale-gen en_US.UTF-8
 # Ensure that we always use UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 COPY . /yocto
-#USER lgomez
+USER lgomez
+
+WORKDIR /yocto
+SHELL ["/bin/bash", "-c"]
+RUN source oe-init-build-env
+RUN  cp conf/* build/conf 
+RUN  source oe-init-build-env && cd .. && make minimal-image
+
+
 
 #RUN cd /yocto && git clone git://git.yoctoproject.org/poky
 #RUN cd /yocto/poky && git checkout sumo
