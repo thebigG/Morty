@@ -164,3 +164,25 @@ xsct% exit
 exit
 ```
 ```
+
+To create a custom xilinx layer(this is super useful for custom things like customs device trees):
+```
+export LAYER=example # your layer name goes here
+# From Yocto root directory
+source setupsdk
+# Optional: Make a backup copy of local.conf and bblayers.conf
+cp conf/local.conf conf/local.conf.bk
+cp conf/bblayers.conf conf/bblayers.conf.bk
+# Add a default MACHINE in local.conf or specify on the command line for bitbake, e.g. MACHINE=zcu102-zynqmp
+echo 'MACHINE ?= "zcu102-zynqmp"' >> conf/local.conf
+# Create your layer in the sources directory
+cd ../sources
+bitbake-layers create-layer meta-$LAYER
+# Create custom layer directory structure for Xilinx components
+cd meta-$LAYER
+mkdir -p conf/machine recipes-kernel/linux-xlnx recipes-bsp/u-boot/u-boot-xlnx recipes-bsp/device-tree/files \
+recipes-bsp/hdf/files recipes-bsp/fsbl/files recipes-bsp/pmu-firmware/files
+# Add new layer with bitbake-layers or edit bblayers.conf manually
+cd ../../build
+bitbake-layers add-layer ../sources/meta-$LAYER
+```
