@@ -11,6 +11,7 @@ meta-*/
 !meta-selftest
 !meta-gpio
 !meta-gpedals-bsp
+!meta-xilinx-tools
 hob-image-*.bb
 *.swp
 *.orig

@@ -4,3 +4,6 @@
 [submodule "meta-xilinx"]
 	path = meta-xilinx
 	url = https://github.com/thebigG/meta-xilinx.git
+[submodule "meta-xilinx-tools"]
+	path = meta-xilinx-tools
+	url = https://github.com/Xilinx/meta-xilinx-tools.git
