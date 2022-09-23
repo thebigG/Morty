@@ -186,3 +186,27 @@ recipes-bsp/hdf/files recipes-bsp/fsbl/files recipes-bsp/pmu-firmware/files
 cd ../../build
 bitbake-layers add-layer ../sources/meta-$LAYER
 ```
+
+
+```
+ERROR: external-hdf-1.0-r0 do_fetch: Fetcher failure: Unable to find file file:///yocto/hw_config/design_ps_pl_wrapper.hdf anywhere. The paths that were searched were:
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf-1.0/poky
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf/poky
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/files/poky
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf-1.0/zedboard-zynq7
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf/zedboard-zynq7
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/files/zedboard-zynq7
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf-1.0/armv7a
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf/armv7a
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/files/armv7a
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf-1.0/zynq
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf/zynq
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/files/zynq
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf-1.0/arm
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf/arm
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/files/arm
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf-1.0/
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/external-hdf/
+    /home/lgomez/morty/meta-xilinx-tools/recipes-bsp/hdf/files/
+    /home/lgomez/morty/build/downloads
+```
