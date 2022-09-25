@@ -7,6 +7,3 @@
 [submodule "meta-xilinx-tools"]
 	path = meta-xilinx-tools
 	url = https://github.com/Xilinx/meta-xilinx-tools.git
-[submodule "meta-python"]
-	path = meta-python
-	url = git://git.openembedded.org/meta-openembedded
