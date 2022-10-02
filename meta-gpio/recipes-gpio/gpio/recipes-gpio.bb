@@ -8,7 +8,7 @@ inherit cmake
 
 do_install() {
     install -d ${D}${bindir}
-    install -m 0755 simple_gpio ${D}${bindir}
+    install -m 0755 simple_gpio_example ${D}${bindir}
 }
 
 DEPENDS = "boost"
