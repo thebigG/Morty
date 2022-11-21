@@ -7,3 +7,6 @@
 [submodule "meta-xilinx-tools"]
 	path = meta-xilinx-tools
 	url = https://github.com/Xilinx/meta-xilinx-tools.git
+[submodule "meta-rust"]
+	path = meta-rust
+	url = https://github.com/meta-rust/meta-rust.git
