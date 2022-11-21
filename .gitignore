@@ -12,6 +12,7 @@ meta-*/
 !meta-gpio
 !meta-gpedals-bsp
 !meta-xilinx-tools
+!meta-rust-hello-world
 hob-image-*.bb
 *.swp
 *.orig
