@@ -1,5 +1,5 @@
 #Run this from parent directory(root of the repo)
-FROM ubuntu:18.04
+FROM ubuntu:16.04
 RUN apt-get -qq update && \
     apt-get -q -y upgrade && \
     apt-get install -y sudo curl wget locales git vim screen libncurses5-dev pkg-config gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python-pip libsdl1.2-dev sudo && \
