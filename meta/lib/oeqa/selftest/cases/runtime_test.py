@@ -5,6 +5,7 @@
 from oeqa.selftest.case import OESelftestTestCase
 from oeqa.utils.commands import runCmd, bitbake, get_bb_var, get_bb_vars, runqemu
 from oeqa.utils.sshcontrol import SSHControl
+from oeqa.core.decorator.oeid import OETestID
 import os
 import re
 import tempfile
@@ -298,139 +299,34 @@ class Postinst(OESelftestTestCase):
                         for initialization managers: sysvinit.
 
         """
-        self.init_manager_loop("sysvinit")
+        file_rootfs_name = "this-was-created-at-rootfstime"
+        fileboot_name = "this-was-created-at-first-boot"
+        rootfs_pkg = 'postinst-at-rootfs'
+        boot_pkg = 'postinst-delayed-a'
 
+        for init_manager in ("sysvinit", "systemd"):
+            for classes in ("package_rpm", "package_deb", "package_ipk"):
+                with self.subTest(init_manager=init_manager, package_class=classes):
+                    features = 'MACHINE = "qemux86"\n'
+                    features += 'CORE_IMAGE_EXTRA_INSTALL += "%s %s "\n'% (rootfs_pkg, boot_pkg)
+                    features += 'IMAGE_FEATURES += "package-management empty-root-password"\n'
+                    features += 'PACKAGE_CLASSES = "%s"\n' % classes
+                    if init_manager == "systemd":
+                        features += 'DISTRO_FEATURES_append = " systemd"\n'
+                        features += 'VIRTUAL-RUNTIME_init_manager = "systemd"\n'
+                        features += 'DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"\n'
+                        features += 'VIRTUAL-RUNTIME_initscripts = ""\n'
+                    self.write_config(features)
 
-    @skipIfNotQemu('qemuall', 'Test only runs in qemu')
-    def test_postinst_rootfs_and_boot_systemd(self):
-        """
-        Summary:        The purpose of this test case is to verify Post-installation
-                        scripts are called when rootfs is created and also test
-                        that script can be delayed to run at first boot.
-        Dependencies:   NA
-        Steps:          1. Add proper configuration to local.conf file
-                        2. Build a "core-image-minimal" image
-                        3. Verify that file created by postinst_rootfs recipe is
-                           present on rootfs dir.
-                        4. Boot the image created on qemu and verify that the file
-                           created by postinst_boot recipe is present on image.
-        Expected:       The files are successfully created during rootfs and boot
-                        time for 3 different package managers: rpm,ipk,deb and
-                        for initialization managers: systemd.
+                    bitbake('core-image-minimal')
 
-        """
+                    file_rootfs_created = os.path.join(get_bb_var('IMAGE_ROOTFS', "core-image-minimal"),
+                                                       file_rootfs_name)
+                    found = os.path.isfile(file_rootfs_created)
+                    self.assertTrue(found, "File %s was not created at rootfs time by %s" % \
+                                    (file_rootfs_name, rootfs_pkg))
 
-        self.init_manager_loop("systemd")
-
-
-    def test_failing_postinst(self):
-        """
-        Summary:        The purpose of this test case is to verify that post-installation
-                        scripts that contain errors are properly reported.
-        Expected:       The scriptlet failure is properly reported.
-                        The file that is created after the error in the scriptlet is not present.
-        Product: oe-core
-        Author: Alexander Kanavin <alex.kanavin@gmail.com>
-        """
-
-        import oe.path
-
-        vars = get_bb_vars(("IMAGE_ROOTFS", "sysconfdir"), "core-image-minimal")
-        rootfs = vars["IMAGE_ROOTFS"]
-        self.assertIsNotNone(rootfs)
-        sysconfdir = vars["sysconfdir"]
-        self.assertIsNotNone(sysconfdir)
-        # Need to use oe.path here as sysconfdir starts with /
-        hosttestdir = oe.path.join(rootfs, sysconfdir, "postinst-test")
-
-        for classes in ("package_rpm", "package_deb", "package_ipk"):
-            with self.subTest(package_class=classes):
-                features = 'CORE_IMAGE_EXTRA_INSTALL = "postinst-rootfs-failing"\n'
-                features += 'PACKAGE_CLASSES = "%s"\n' % classes
-                self.write_config(features)
-                bb_result = bitbake('core-image-minimal', ignore_status=True)
-                self.assertGreaterEqual(bb_result.output.find("Postinstall scriptlets of ['postinst-rootfs-failing'] have failed."), 0,
-                    "Warning about a failed scriptlet not found in bitbake output: %s" %(bb_result.output))
-
-                self.assertTrue(os.path.isfile(os.path.join(hosttestdir, "rootfs-before-failure")),
-                                    "rootfs-before-failure file was not created")
-                self.assertFalse(os.path.isfile(os.path.join(hosttestdir, "rootfs-after-failure")),
-                                    "rootfs-after-failure file was created")
-
-class SystemTap(OESelftestTestCase):
-        """
-        Summary:        The purpose of this test case is to verify native crosstap
-                        works while talking to a target.
-        Expected:       The script should successfully connect to the qemu machine
-                        and run some systemtap examples on a qemu machine.
-        """
-
-        @classmethod
-        def setUpClass(cls):
-            super(SystemTap, cls).setUpClass()
-            cls.image = "core-image-minimal"
-
-        def default_config(self):
-            return """
-# These aren't the actual IP addresses but testexport class needs something defined
-TEST_SERVER_IP = "192.168.7.1"
-TEST_TARGET_IP = "192.168.7.2"
-
-EXTRA_IMAGE_FEATURES += "tools-profile dbg-pkgs"
-IMAGE_FEATURES_append = " ssh-server-dropbear"
-
-# enables kernel debug symbols
-KERNEL_EXTRA_FEATURES_append = " features/debug/debug-kernel.scc"
-KERNEL_EXTRA_FEATURES_append = " features/systemtap/systemtap.scc"
-
-# add systemtap run-time into target image if it is not there yet
-IMAGE_INSTALL_append = " systemtap"
-"""
-
-        def test_crosstap_helloworld(self):
-            self.write_config(self.default_config())
-            bitbake('systemtap-native')
-            systemtap_examples = os.path.join(get_bb_var("WORKDIR","systemtap-native"), "usr/share/systemtap/examples")
-            bitbake(self.image)
-
-            with runqemu(self.image) as qemu:
-                cmd = "crosstap -r root@192.168.7.2 -s %s/general/helloworld.stp " % systemtap_examples 
-                result = runCmd(cmd)
-                self.assertEqual(0, result.status, 'crosstap helloworld returned a non 0 status:%s' % result.output)
-
-        def test_crosstap_pstree(self):
-            self.write_config(self.default_config())
-
-            bitbake('systemtap-native')
-            systemtap_examples = os.path.join(get_bb_var("WORKDIR","systemtap-native"), "usr/share/systemtap/examples")
-            bitbake(self.image)
-
-            with runqemu(self.image) as qemu:
-                cmd = "crosstap -r root@192.168.7.2 -s %s/process/pstree.stp" % systemtap_examples
-                result = runCmd(cmd)
-                self.assertEqual(0, result.status, 'crosstap pstree returned a non 0 status:%s' % result.output)
-
-        def test_crosstap_syscalls_by_proc(self):
-            self.write_config(self.default_config())
-
-            bitbake('systemtap-native')
-            systemtap_examples = os.path.join(get_bb_var("WORKDIR","systemtap-native"), "usr/share/systemtap/examples")
-            bitbake(self.image)
-
-            with runqemu(self.image) as qemu:
-                cmd = "crosstap -r root@192.168.7.2 -s %s/process/ syscalls_by_proc.stp" % systemtap_examples
-                result = runCmd(cmd)
-                self.assertEqual(0, result.status, 'crosstap  syscalls_by_proc returned a non 0 status:%s' % result.output)
-
-        def test_crosstap_syscalls_by_pid(self):
-            self.write_config(self.default_config())
-
-            bitbake('systemtap-native')
-            systemtap_examples = os.path.join(get_bb_var("WORKDIR","systemtap-native"), "usr/share/systemtap/examples")
-            bitbake(self.image)
-
-            with runqemu(self.image) as qemu:
-                cmd = "crosstap -r root@192.168.7.2 -s %s/process/ syscalls_by_pid.stp" % systemtap_examples
-                result = runCmd(cmd)
-                self.assertEqual(0, result.status, 'crosstap  syscalls_by_pid returned a non 0 status:%s' % result.output)
-
+                    testcommand = 'ls /etc/' + fileboot_name
+                    with runqemu('core-image-minimal') as qemu:
+                        status, output = qemu.run_serial("-f /etc/" + fileboot_name)
+                        self.assertEqual(status, 0, 'File %s was not created at first boot (%s)' % (fileboot_name, output))

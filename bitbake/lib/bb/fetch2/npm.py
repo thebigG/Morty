@@ -30,86 +30,19 @@ import re
 import shlex
 import tempfile
 import bb
-from bb.fetch2 import Fetch
-from bb.fetch2 import FetchError
-from bb.fetch2 import FetchMethod
-from bb.fetch2 import MissingParameterError
-from bb.fetch2 import ParameterError
-from bb.fetch2 import URI
-from bb.fetch2 import check_network_access
-from bb.fetch2 import runfetchcmd
-from bb.utils import is_semver
+from   bb.fetch2 import FetchMethod
+from   bb.fetch2 import FetchError
+from   bb.fetch2 import ChecksumError
+from   bb.fetch2 import runfetchcmd
+from   bb.fetch2 import logger
+from   bb.fetch2 import UnpackError
+from   bb.fetch2 import ParameterError
 
-def npm_package(package):
-    """Convert the npm package name to remove unsupported character"""
-    # Scoped package names (with the @) use the same naming convention
-    # as the 'npm pack' command.
-    if package.startswith("@"):
-        return re.sub("/", "-", package[1:])
-    return package
-
-def npm_filename(package, version):
-    """Get the filename of a npm package"""
-    return npm_package(package) + "-" + version + ".tgz"
-
-def npm_localfile(package, version):
-    """Get the local filename of a npm package"""
-    return os.path.join("npm2", npm_filename(package, version))
-
-def npm_integrity(integrity):
-    """
-    Get the checksum name and expected value from the subresource integrity
-        https://www.w3.org/TR/SRI/
-    """
-    algo, value = integrity.split("-", maxsplit=1)
-    return "%ssum" % algo, base64.b64decode(value).hex()
-
-def npm_unpack(tarball, destdir, d):
-    """Unpack a npm tarball"""
-    bb.utils.mkdirhier(destdir)
-    cmd = "tar --extract --gzip --file=%s" % shlex.quote(tarball)
-    cmd += " --no-same-owner"
-    cmd += " --strip-components=1"
-    runfetchcmd(cmd, d, workdir=destdir)
-
-class NpmEnvironment(object):
-    """
-    Using a npm config file seems more reliable than using cli arguments.
-    This class allows to create a controlled environment for npm commands.
-    """
-    def __init__(self, d, configs=None):
-        self.d = d
-        self.configs = configs
-
-    def run(self, cmd, args=None, configs=None, workdir=None):
-        """Run npm command in a controlled environment"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            d = bb.data.createCopy(self.d)
-            d.setVar("HOME", tmpdir)
-
-            cfgfile = os.path.join(tmpdir, "npmrc")
-
-            if not workdir:
-                workdir = tmpdir
-
-            def _run(cmd):
-                cmd = "NPM_CONFIG_USERCONFIG=%s " % cfgfile + cmd
-                cmd = "NPM_CONFIG_GLOBALCONFIG=%s " % cfgfile + cmd
-                return runfetchcmd(cmd, d, workdir=workdir)
-
-            if self.configs:
-                for key, value in self.configs:
-                    _run("npm config set %s %s" % (key, shlex.quote(value)))
-
-            if configs:
-                for key, value in configs:
-                    _run("npm config set %s %s" % (key, shlex.quote(value)))
-
-            if args:
-                for key, value in args:
-                    cmd += " --%s=%s" % (key, shlex.quote(value))
-
-            return _run(cmd)
+def subprocess_setup():
+    # Python installs a SIGPIPE handler by default. This is usually not what
+    # non-Python subprocesses expect.
+    # SIGPIPE errors are known issues with gzip/bash
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 class Npm(FetchMethod):
     """Class to fetch a package from a npm registry"""

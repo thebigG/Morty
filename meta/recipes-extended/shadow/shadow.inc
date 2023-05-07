@@ -9,10 +9,19 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=ed80ff1c2b40843cf5768e5229cf16e5 \
 DEPENDS = "virtual/crypt"
 
 UPSTREAM_CHECK_URI = "https://github.com/shadow-maint/shadow/releases"
-SRC_URI = "https://github.com/shadow-maint/shadow/releases/download/${PV}/${BP}.tar.gz \
+
+SRC_URI = "https://downloads.yoctoproject.org/mirror/sources/${BP}.tar.xz \
            file://shadow-4.1.3-dots-in-usernames.patch \
+           file://usermod-fix-compilation-failure-with-subids-disabled.patch \
+           file://fix-installation-failure-with-subids-disabled.patch \
+           file://0001-Do-not-read-login.defs-before-doing-chroot.patch \
+           file://check_size_of_uid_t_and_gid_t_using_AC_CHECK_SIZEOF.patch \
+           file://0001-useradd-copy-extended-attributes-of-home.patch \
+           file://0001-shadow-CVE-2017-12424 \
+           file://CVE-2017-2616.patch \
            ${@bb.utils.contains('PACKAGECONFIG', 'pam', '${PAM_SRC_URI}', '', d)} \
-           file://shadow-relaxed-usernames.patch \
+           file://CVE-2018-7169.patch \
+           file://CVE-2016-6252.patch \
            "
 
 SRC_URI_append_class-target = " \

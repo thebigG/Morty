@@ -10,8 +10,6 @@ python __anonymous () {
         uarch = d.getVar("UBOOT_ARCH")
         if uarch == "arm64":
             replacementtype = "Image"
-        elif uarch == "riscv":
-            replacementtype = "Image"
         elif uarch == "mips":
             replacementtype = "vmlinuz.bin"
         elif uarch == "x86":

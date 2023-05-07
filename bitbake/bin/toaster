@@ -8,7 +8,7 @@
 #
 
 HELP="
-Usage 1: source toaster start|stop [webport=<address:port>] [noweb] [nobuild] [toasterdir]
+Usage: source toaster start|stop [webport=<address:port>] [noweb] [nobuild]
     Optional arguments:
         [nobuild] Setup the environment for capturing builds with toaster but disable managed builds
         [noweb] Setup the environment for capturing builds with toaster but don't start the web server

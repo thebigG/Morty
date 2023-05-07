@@ -50,31 +50,19 @@ class OETestResult(_TestResult):
 
         self.tc = tc
 
-        # stdout and stderr for each test case
-        self.logged_output = {}
-
     def startTest(self, test):
-        # May have been set by concurrencytest
-        if test.id() not in self.starttime:
-            self.starttime[test.id()] = time.time()
+        # Allow us to trigger the testcase buffer mode on a per test basis
+        # so stdout/stderr are only printed upon failure. Enables debugging
+        # but clean output
+        if hasattr(test, "buffer"):
+            self.buffer = test.buffer
         super(OETestResult, self).startTest(test)
 
-    def stopTest(self, test):
-        self.endtime[test.id()] = time.time()
-        if self.buffer:
-            self.logged_output[test.id()] = (
-                    sys.stdout.getvalue(), sys.stderr.getvalue())
-        super(OETestResult, self).stopTest(test)
-        if test.id() in self.progressinfo:
-            self.tc.logger.info(self.progressinfo[test.id()])
-
-        # Print the errors/failures early to aid/speed debugging, its a pain
-        # to wait until selftest finishes to see them.
-        for t in ['failures', 'errors', 'skipped', 'expectedFailures']:
-            for (scase, msg) in getattr(self, t):
-                if test.id() == scase.id():
-                    self.tc.logger.info(str(msg))
-                    break
+    def _tc_map_results(self):
+        self.tc._results['failures'] = self.failures
+        self.tc._results['errors'] = self.errors
+        self.tc._results['skipped'] = self.skipped
+        self.tc._results['expectedFailures'] = self.expectedFailures
 
     def logSummary(self, component, context_msg=''):
         elapsed_time = self.tc._run_end_time - self.tc._run_start_time

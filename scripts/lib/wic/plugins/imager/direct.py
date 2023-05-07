@@ -120,17 +120,7 @@ class DirectPlugin(ImagerPlugin):
                 continue
 
             if part.use_uuid:
-                if part.fsuuid:
-                    # FAT UUID is different from others
-                    if len(part.fsuuid) == 10:
-                        device_name = "UUID=%s-%s" % \
-                                       (part.fsuuid[2:6], part.fsuuid[6:])
-                    else:
-                        device_name = "UUID=%s" % part.fsuuid
-                else:
-                    device_name = "PARTUUID=%s" % part.uuid
-            elif part.use_label:
-                device_name = "LABEL=%s" % part.label
+                device_name = "PARTUUID=%s" % part.uuid
             else:
                 # mmc device partitions are named mmcblk0p1, mmcblk0p2..
                 prefix = 'p' if  part.disk.startswith('mmcblk') else ''

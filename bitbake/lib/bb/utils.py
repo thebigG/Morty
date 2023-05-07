@@ -524,8 +524,18 @@ def md5_file(filename):
     """
     Return the hex string representation of the MD5 checksum of filename.
     """
-    import hashlib
-    return _hasher(hashlib.md5(), filename)
+    import hashlib, mmap
+
+    with open(filename, "rb") as f:
+        m = hashlib.md5()
+        try:
+            with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+                for chunk in iter(lambda: mm.read(8192), b''):
+                    m.update(chunk)
+        except ValueError:
+            # You can't mmap() an empty file so silence this exception
+            pass
+    return m.hexdigest()
 
 def sha256_file(filename):
     """

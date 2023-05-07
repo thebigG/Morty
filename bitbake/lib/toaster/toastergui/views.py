@@ -38,7 +38,6 @@ logger = logging.getLogger("toaster")
 
 # Project creation and managed build enable
 project_enable = ('1' == os.environ.get('TOASTER_BUILDSERVER'))
-is_project_specific = ('1' == os.environ.get('TOASTER_PROJECTSPECIFIC'))
 
 class MimeTypeFinder(object):
     # setting this to False enables additional non-standard mimetypes
@@ -58,7 +57,6 @@ class MimeTypeFinder(object):
 # single point to add global values into the context before rendering
 def toaster_render(request, page, context):
     context['project_enable'] = project_enable
-    context['project_specific'] = is_project_specific
     return render(request, page, context)
 
 
@@ -1513,76 +1511,6 @@ if True:
                 return redirect(reverse(project_specific, args=(project.pk,)))
         context = {"project": project}
         return toaster_render(request, "project.html", context)
-
-    # Shows the edit project-specific page
-    def project_specific(request, pid):
-        project = Project.objects.get(pk=pid)
-
-        # Are we refreshing from a successful project specific update clone?
-        if Project.PROJECT_SPECIFIC_CLONING_SUCCESS == project.get_variable(Project.PROJECT_SPECIFIC_STATUS):
-            return redirect(reverse(landing_specific,args=(project.pk,)))
-
-        context = {
-            "project": project,
-            "is_new" : project.get_variable(Project.PROJECT_SPECIFIC_ISNEW),
-            "default_image_recipe" : project.get_variable(Project.PROJECT_SPECIFIC_DEFAULTIMAGE),
-            "mru" : Build.objects.all().filter(project=project,outcome=Build.IN_PROGRESS),
-            }
-        if project.build_set.filter(outcome=Build.IN_PROGRESS).count() > 0:
-            context['build_in_progress_none_completed'] = True
-        else:
-            context['build_in_progress_none_completed'] = False
-        return toaster_render(request, "project.html", context)
-
-    # perform the final actions for the project specific page
-    def project_specific_finalize(cmnd, pid):
-        project = Project.objects.get(pk=pid)
-        callback = project.get_variable(Project.PROJECT_SPECIFIC_CALLBACK)
-        if "update" == cmnd:
-            # Delete all '_PROJECT_PREPARE_' builds
-            for b in Build.objects.all().filter(project=project):
-                delete_build = False
-                for t in b.target_set.all():
-                    if '_PROJECT_PREPARE_' == t.target:
-                        delete_build = True
-                if delete_build:
-                    from django.core import management
-                    management.call_command('builddelete', str(b.id), interactive=False)
-            # perform callback at this last moment if defined, in case Toaster gets shutdown next
-            default_target = project.get_variable(Project.PROJECT_SPECIFIC_DEFAULTIMAGE)
-            if callback:
-                callback = callback.replace("<IMAGE>",default_target)
-        if "cancel" == cmnd:
-            if callback:
-                callback = callback.replace("<IMAGE>","none")
-                callback = callback.replace("--update","--cancel")
-        # perform callback at this last moment if defined, in case this Toaster gets shutdown next
-        ret = ''
-        if callback:
-            ret = os.system('bash -c "%s"' % callback)
-            project.set_variable(Project.PROJECT_SPECIFIC_CALLBACK,'')
-        # Delete the temp project specific variables
-        project.set_variable(Project.PROJECT_SPECIFIC_ISNEW,'')
-        project.set_variable(Project.PROJECT_SPECIFIC_STATUS,Project.PROJECT_SPECIFIC_NONE)
-        # WORKAROUND: Release this workaround flag
-        project.set_variable('INTERNAL_PROJECT_SPECIFIC_SKIPRELEASE','')
-
-    # Shows the final landing page for project specific update
-    def landing_specific(request, pid):
-        project_specific_finalize("update", pid)
-        context = {
-            "install_dir": os.environ['TOASTER_DIR'],
-        }
-        return toaster_render(request, "landing_specific.html", context)
-
-    # Shows the related landing-specific page
-    def landing_specific_cancel(request, pid):
-        project_specific_finalize("cancel", pid)
-        context = {
-            "install_dir": os.environ['TOASTER_DIR'],
-            "status": "cancel",
-        }
-        return toaster_render(request, "landing_specific.html", context)
 
     def jsunittests(request):
         """ Provides a page for the js unit tests """

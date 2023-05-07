@@ -160,6 +160,10 @@ python inject_rm_work() {
     if not deps:
         deps = ["do_populate_sysroot", "do_populate_lic"]
 
+    # deps can be empty if do_build doesn't exist, e.g. *-inital recipes
+    if not deps:
+        deps = ["do_populate_sysroot", "do_populate_lic"]
+
     if pn in excludes:
         d.delVarFlag('rm_work_rootfs', 'cleandirs')
         d.delVarFlag('rm_work_populatesdk', 'cleandirs')

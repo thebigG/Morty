@@ -12,11 +12,17 @@ LIC_FILES_CHKSUM = "file://OvmfPkg/License.txt;md5=06357ddc23f46577c2aeaeaf7b776
 PACKAGECONFIG ??= ""
 PACKAGECONFIG[secureboot] = ",,,"
 
-SRC_URI = "gitsm://github.com/tianocore/edk2.git;branch=master;protocol=https \
-           file://0001-ovmf-update-path-to-native-BaseTools.patch \
-           file://0002-BaseTools-makefile-adjust-to-build-in-under-bitbake.patch \
-           file://0003-ovmf-enable-long-path-file.patch \
-           file://0001-ovmf-Update-to-latest.patch \
+SRC_URI = "git://github.com/tianocore/edk2.git;branch=master \
+	file://0001-ia32-Dont-use-pie.patch \
+	file://0002-ovmf-update-path-to-native-BaseTools.patch \
+	file://0003-BaseTools-makefile-adjust-to-build-in-under-bitbake.patch \
+	file://0004-ovmf-enable-long-path-file.patch \
+	file://VfrCompile-increase-path-length-limit.patch \
+	file://no-stack-protector-all-archs.patch \
+	file://0001-BaseTools-header.makefile-add-Wno-stringop-truncatio.patch \
+	file://0002-BaseTools-header.makefile-add-Wno-restrict.patch \
+	file://0003-BaseTools-header.makefile-revert-gcc-8-Wno-xxx-optio.patch \
+	file://0004-BaseTools-GenVtf-silence-false-stringop-overflow-war.patch \
         "
 
 PV = "edk2-stable202005"
@@ -139,7 +145,7 @@ do_compile_class-native() {
 
 do_compile_class-target() {
     export LFLAGS="${LDFLAGS}"
-    PARALLEL_JOBS="${@oe.utils.parallel_make_argument(d, '-n %d')}"
+    PARALLEL_JOBS="${@ '${PARALLEL_MAKE}'.replace('-j', '-n ')}"
     OVMF_ARCH="X64"
     if [ "${TARGET_ARCH}" != "x86_64" ] ; then
         OVMF_ARCH="IA32"

@@ -6,8 +6,8 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
-from django.conf.urls import url
-from django.views.generic import RedirectView
+from django.conf.urls import include, url
+from django.views.generic import RedirectView, TemplateView
 
 from toastergui import tables
 from toastergui import buildtables

@@ -93,8 +93,6 @@ class QemuTarget(BaseTarget):
 
     def __init__(self, d, logger, image_fstype=None):
 
-        import oe.types
-
         super(QemuTarget, self).__init__(d, logger)
 
         self.rootfs = ''
@@ -117,9 +115,9 @@ class QemuTarget(BaseTarget):
         import oe.path
         bb.utils.mkdirhier(self.testdir)
         self.qemurunnerlog = os.path.join(self.testdir, 'qemurunner_log.%s' % self.datetime)
-        self.loggerhandler = logging.FileHandler(self.qemurunnerlog)
-        self.loggerhandler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
-        self.logger.addHandler(self.loggerhandler)
+        loggerhandler = logging.FileHandler(self.qemurunnerlog)
+        loggerhandler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        self.logger.addHandler(loggerhandler)
         oe.path.symlink(os.path.basename(self.qemurunnerlog), os.path.join(self.testdir, 'qemurunner_log'), force=True)
 
         if d.getVar("DISTRO") == "poky-tiny":
@@ -143,8 +141,7 @@ class QemuTarget(BaseTarget):
                             use_kvm = use_kvm,
                             dump_dir = dump_dir,
                             dump_host_cmds = d.getVar("testimage_dump_host"),
-                            logger = logger,
-                            serial_ports = len(d.getVar("SERIAL_CONSOLES").split()))
+                            logger = logger)
 
         self.target_dumper = TargetDumper(dump_target_cmds, dump_dir, self.runner)
 

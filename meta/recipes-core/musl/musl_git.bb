@@ -4,11 +4,9 @@
 require musl.inc
 inherit linuxloader
 
-SRCREV = "a5aff1972c9e3981566414b09a28e331ccd2be5d"
+SRCREV = "eb03bde2f24582874cb72b56c7811bf51da0c817"
 
-BASEVER = "1.2.1"
-
-PV = "${BASEVER}+git${SRCPV}"
+PV = "1.1.18+git${SRCPV}"
 
 # mirror is at git://github.com/kraj/musl.git
 
@@ -62,12 +60,14 @@ do_compile() {
 
 do_install() {
 	oe_runmake install DESTDIR='${D}'
-	install -d ${D}${bindir} ${D}${base_libdir} ${D}${sysconfdir}
-        echo "${base_libdir}" > ${D}${sysconfdir}/ld-musl-${MUSL_LDSO_ARCH}.path
-        echo "${libdir}" >> ${D}${sysconfdir}/ld-musl-${MUSL_LDSO_ARCH}.path
-	rm -f ${D}${bindir}/ldd ${D}${GLIBC_LDSO}
+
+	install -d ${D}${bindir}
+	rm -f ${D}${bindir}/ldd
 	lnr ${D}${libdir}/libc.so ${D}${bindir}/ldd
-	lnr ${D}${libdir}/libc.so ${D}${GLIBC_LDSO}
+	for l in crypt dl m pthread resolv rt util xnet
+	do
+		ln -sf libc.so ${D}${libdir}/lib$l.so
+	done
 }
 
 PACKAGES =+ "${PN}-glibc-compat"

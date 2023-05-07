@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=5b4be4b2549338526758ef479c040943 \
                     file://src/syslogd.c;beginline=2;endline=15;md5=a880fecbc04503f071c494a9c0dd4f97 \
                    "
 
-inherit update-rc.d update-alternatives systemd autotools
+inherit update-rc.d systemd
 
 SRC_URI = "git://github.com/troglobit/sysklogd.git;nobranch=1 \
            file://sysklogd \
@@ -34,11 +34,6 @@ CONFFILES_${PN} = "${sysconfdir}/syslog.conf"
 RCONFLICTS_${PN} = "rsyslog busybox-syslog syslog-ng"
 
 FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES','systemd','${exec_prefix}/lib/tmpfiles.d/sysklogd.conf', '', d)}"
-
-ALTERNATIVE_PRIORITY = "100"
-
-ALTERNATIVE_${PN}-doc = "syslogd.8"
-ALTERNATIVE_LINK_NAME[syslogd.8] = "${mandir}/man8/syslogd.8"
 
 pkg_prerm_${PN} () {
 	if test "x$D" = "x"; then

@@ -5,24 +5,10 @@ Signed-off-by: Mihaela Sendrea <mihaela.sendrea@enea.com>
 Signed-off-by: Andrej Valek <andrej.valek@siemens.com>
 Upstream-Status: Backport
 
-Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
----
- Makefile.am   |   9 ++++
- runsuite.c    |   1 +
- runtest.c     |   2 +
- runxmlconf.c  |   1 +
- testapi.c     | 122 ++++++++++++++++++++++++++++++---------------
- testchar.c    | 156 +++++++++++++++++++++++++++++++++++++++++-----------------
- testdict.c    |   1 +
- testlimits.c  |   1 +
- testrecurse.c |   2 +
- 9 files changed, 210 insertions(+), 85 deletions(-)
-
-diff --git a/Makefile.am b/Makefile.am
-index 9c630be..7cfd04b 100644
---- a/Makefile.am
-+++ b/Makefile.am
-@@ -202,6 +202,15 @@ runxmlconf_LDADD= $(LDADDS)
+diff -uNr a/Makefile.am b/Makefile.am
+--- a/Makefile.am	2017-08-28 15:01:14.000000000 +0200
++++ b/Makefile.am	2017-09-05 08:06:05.752287323 +0200
+@@ -202,6 +202,15 @@
  #testOOM_DEPENDENCIES = $(DEPS)
  #testOOM_LDADD= $(LDADDS)
  
@@ -38,11 +24,11 @@ index 9c630be..7cfd04b 100644
  runtests: runtest$(EXEEXT) testrecurse$(EXEEXT) testapi$(EXEEXT) \
            testchar$(EXEEXT) testdict$(EXEEXT) runxmlconf$(EXEEXT)
  	[ -d test   ] || $(LN_S) $(srcdir)/test   .
-diff --git a/runsuite.c b/runsuite.c
-index aaab13e..9ba2c5d 100644
---- a/runsuite.c
-+++ b/runsuite.c
-@@ -1162,6 +1162,7 @@ main(int argc ATTRIBUTE_UNUSED, char **argv ATTRIBUTE_UNUSED) {
+
+diff -uNr a/runsuite.c b/runsuite.c
+--- a/runsuite.c	2013-04-12 16:17:11.462823238 +0200
++++ b/runsuite.c	2013-04-17 14:07:24.352693211 +0200
+@@ -1162,6 +1162,7 @@
  
      if (logfile != NULL)
          fclose(logfile);

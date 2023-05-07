@@ -168,7 +168,6 @@ def print_ui_queue():
             logger.removeHandler(stderr)
         else:
             logger.removeHandler(stdout)
-        ui_queue = []
 
 def fire_ui_handlers(event, d):
     global _thread_lock

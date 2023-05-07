@@ -133,17 +133,11 @@ do_install_append_class-target () {
 	fi
 }
 
-# As we do not build python3 for windows, makes no sense to ship the script that's using it
-do_install_append_mingw32() {
-        rm -f ${D}${bindir}/gtester-report
-}
-
-CODEGEN_PYTHON_RDEPENDS = "python3 python3-distutils python3-xml"
-CODEGEN_PYTHON_RDEPENDS_mingw32 = ""
-
-RDEPENDS_${PN}-codegen += "${CODEGEN_PYTHON_RDEPENDS}"
-
-RDEPENDS_${PN}-ptest += "${PN}-utils"
+RDEPENDS_${PN}-codegen += "\
+            python3 \
+            python3-distutils \
+            python3-xml \
+           "
 
 RDEPENDS_${PN}-ptest += "\
             coreutils \

@@ -832,6 +832,12 @@ class Tinfoil:
                     if handler not in self.oldhandlers:
                         self.logger.handlers.remove(handler)
 
+        # Restore logging handlers to how it looked when we started
+        if self.oldhandlers:
+            for handler in self.logger.handlers:
+                if handler not in self.oldhandlers:
+                    self.logger.handlers.remove(handler)
+
     def _reconvert_type(self, obj, origtypename):
         """
         Convert an object back to the right type, in the case

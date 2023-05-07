@@ -76,3 +76,5 @@ do_configure_prepend() {
 	FROM_BOOTSTRAP=1 ${S}/autogen.sh
 	cd ${B}
 }
+
+RDEPENDS_${PN}_class-native = ""

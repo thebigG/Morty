@@ -27,4 +27,6 @@ EXTRA_IMAGEDEPENDS += "qemu-system-native qemu-helper-native"
 KERNEL_FEATURES_append_pn-linux-yocto = " features/nfsd/nfsd-enable.scc"
 KERNEL_FEATURES_append_pn-linux-yocto-rt = " features/nfsd/nfsd-enable.scc"
 
+MACHINE_EXTRA_RRECOMMENDS += "rng-tools"
+
 IMAGE_CLASSES += "qemuboot"

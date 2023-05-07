@@ -456,8 +456,7 @@ def setup_bitbake(configParams, extrafeatures=None):
                     break
             except BBMainFatal:
                 raise
-            except (Exception, bb.server.process.ProcessTimeout, SystemExit) as e:
-                # SystemExit does not inherit from the Exception class, needs to be included explicitly
+            except (Exception, bb.server.process.ProcessTimeout) as e:
                 if not retries:
                     raise
                 retries -= 1
@@ -491,7 +490,7 @@ def setup_bitbake(configParams, extrafeatures=None):
 def lockBitbake():
     topdir = bb.cookerdata.findTopdir()
     if not topdir:
-        bb.error("Unable to find conf/bblayers.conf or conf/bitbake.conf. BBPATH is unset and/or not in a build directory?")
+        bb.error("Unable to find conf/bblayers.conf or conf/bitbake.conf. BBAPTH is unset and/or not in a build directory?")
         raise BBMainFatal
     lockfile = topdir + "/bitbake.lock"
     return topdir, bb.utils.lockfile(lockfile, False, False)

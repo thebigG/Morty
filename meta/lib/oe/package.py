@@ -107,7 +107,39 @@ def strip_execs(pn, dstdir, strip_cmd, libdir, base_libdir, d, qa_already_stripp
     :param qa_already_stripped: Set to True if already-stripped' in ${INSANE_SKIP}
     This is for proper logging and messages only.
     """
-    import stat, errno, oe.path, oe.utils
+    import stat, errno, oe.path, oe.utils, mmap
+
+    # Detect .ko module by searching for "vermagic=" string
+    def is_kernel_module(path):
+        with open(path) as f:
+            return mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ).find(b"vermagic=") >= 0
+
+    # Return type (bits):
+    # 0 - not elf
+    # 1 - ELF
+    # 2 - stripped
+    # 4 - executable
+    # 8 - shared library
+    # 16 - kernel module
+    def is_elf(path):
+        exec_type = 0
+        ret, result = oe.utils.getstatusoutput("file -b '%s'" % path)
+
+        if ret:
+            bb.error("split_and_strip_files: 'file %s' failed" % path)
+            return exec_type
+
+        if "ELF" in result:
+            exec_type |= 1
+            if "not stripped" not in result:
+                exec_type |= 2
+            if "executable" in result:
+                exec_type |= 4
+            if "shared" in result:
+                exec_type |= 8
+            if "relocatable" in result and is_kernel_module(path):
+                exec_type |= 16
+        return exec_type
 
     elffiles = {}
     inodes = {}

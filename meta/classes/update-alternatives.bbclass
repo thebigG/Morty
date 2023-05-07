@@ -161,7 +161,7 @@ python apply_update_alternative_renames () {
             if not alt_link:
                 alt_link = "%s/%s" % (d.getVar('bindir'), alt_name)
                 d.setVarFlag('ALTERNATIVE_LINK_NAME', alt_name, alt_link)
-            if alt_link.startswith(os.path.join(d.getVar('sysconfdir'), 'init.d')):
+            if alt_link.startswith(os.path.join(d.getVar('sysconfdir', True), 'init.d')):
                 # Managing init scripts does not work (bug #10433), foremost
                 # because of a race with update-rc.d
                 bb.fatal("Using update-alternatives for managing SysV init scripts is not supported")
@@ -270,8 +270,28 @@ python populate_packages_updatealternatives () {
         # Create post install/removal scripts
         alt_setup_links = ""
         alt_remove_links = ""
-        updates = update_alternatives_alt_targets(d, pkg)
-        for alt_name, alt_link, alt_target, alt_priority in updates:
+        for alt_name in (d.getVar('ALTERNATIVE_%s' % pkg) or "").split():
+            alt_link     = d.getVarFlag('ALTERNATIVE_LINK_NAME', alt_name)
+            alt_target   = d.getVarFlag('ALTERNATIVE_TARGET_%s' % pkg, alt_name) or d.getVarFlag('ALTERNATIVE_TARGET', alt_name)
+            alt_target   = alt_target or d.getVar('ALTERNATIVE_TARGET_%s' % pkg) or d.getVar('ALTERNATIVE_TARGET') or alt_link
+            # Sometimes alt_target is specified as relative to the link name.
+            alt_target   = os.path.join(os.path.dirname(alt_link), alt_target)
+
+            alt_priority = d.getVarFlag('ALTERNATIVE_PRIORITY_%s' % pkg,  alt_name) or d.getVarFlag('ALTERNATIVE_PRIORITY',  alt_name)
+            alt_priority = alt_priority or d.getVar('ALTERNATIVE_PRIORITY_%s' % pkg) or d.getVar('ALTERNATIVE_PRIORITY')
+
+            # This shouldn't trigger, as it should have been resolved earlier!
+            if alt_link == alt_target:
+                bb.note('alt_link == alt_target: %s == %s -- correcting, this should not happen!' % (alt_link, alt_target))
+                alt_target = '%s.%s' % (alt_target, pn)
+
+            if not os.path.lexists('%s/%s' % (pkgdest, alt_target)):
+                bb.warn('%s: NOT adding alternative provide %s: %s does not exist' % (pn, alt_link, alt_target))
+                continue
+
+            # Default to generate shell script.. eventually we may want to change this...
+            alt_target = os.path.normpath(alt_target)
+
             alt_setup_links  += '\tupdate-alternatives --install %s %s %s %s\n' % (alt_link, alt_name, alt_target, alt_priority)
             alt_remove_links += '\tupdate-alternatives --remove  %s %s\n' % (alt_name, alt_target)
 
@@ -284,11 +304,8 @@ python populate_packages_updatealternatives () {
 
             bb.note('adding update-alternatives calls to postinst/prerm for %s' % pkg)
             bb.note('%s' % alt_setup_links)
-            postinst = d.getVar('pkg_postinst_%s' % pkg)
-            if postinst:
-                postinst = alt_setup_links + postinst
-            else:
-                postinst = '#!/bin/sh\n' + alt_setup_links
+            postinst = d.getVar('pkg_postinst_%s' % pkg) or '#!/bin/sh\n'
+            postinst += alt_setup_links
             d.setVar('pkg_postinst_%s' % pkg, postinst)
 
             bb.note('%s' % alt_remove_links)

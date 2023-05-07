@@ -19,4 +19,8 @@ do_install_append () {
 	oe_multilib_header libunwind.h
 }
 
+do_install_append () {
+	oe_multilib_header libunwind.h
+}
+
 BBCLASSEXTEND = "native"

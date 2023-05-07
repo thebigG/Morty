@@ -5,6 +5,16 @@
  * 
  */
 
+
+#if defined (__bpf__)
+#define __MHWORDSIZE			64
+#elif defined (__arm__)
+#define __MHWORDSIZE			32
+#elif defined (__aarch64__) && defined ( __LP64__)
+#define __MHWORDSIZE			64
+#elif defined (__aarch64__)
+#define __MHWORDSIZE			32
+#else
 #include <bits/wordsize.h>
 
 #if __WORDSIZE == 32

@@ -22,21 +22,6 @@ UPSTREAM_CHECK_REGEX = "(?P<pver>\d+(\.\d+)+)\.src\.tar"
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 SSTATE_SCAN_CMD = "true"
 
-export GOROOT_OVERRIDE = "1"
-export GOTMPDIR ?= "${WORKDIR}/go-tmp"
-GOTMPDIR[vardepvalue] = ""
-export CGO_ENABLED = "1"
-
-export GOHOSTOS ?= "${BUILD_GOOS}"
-export GOHOSTARCH ?= "${BUILD_GOARCH}"
-export GOROOT_BOOTSTRAP ?= "${STAGING_LIBDIR_NATIVE}/go"
-export GOOS ?= "${TARGET_GOOS}"
-export GOARCH ?= "${TARGET_GOARCH}"
-export GOARM ?= "${TARGET_GOARM}"
-export GO386 ?= "${TARGET_GO386}"
-export GOMIPS ?= "${TARGET_GOMIPS}"
-export GOROOT_FINAL ?= "${libdir}/go"
-
 do_compile_prepend() {
 	BUILD_CC=${BUILD_CC}
 }

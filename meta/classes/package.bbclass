@@ -1112,6 +1112,37 @@ python split_and_strip_files () {
         debugstaticlibdir = ""
         debugsrcdir = "/usr/src/debug"
 
+    sourcefile = d.expand("${WORKDIR}/debugsources.list")
+    bb.utils.remove(sourcefile)
+
+    # Return type (bits):
+    # 0 - not elf
+    # 1 - ELF
+    # 2 - stripped
+    # 4 - executable
+    # 8 - shared library
+    # 16 - kernel module
+    def isELF(path):
+        type = 0
+        ret, result = oe.utils.getstatusoutput("file -b '%s'" % path)
+
+        if ret:
+            msg = "split_and_strip_files: 'file %s' failed" % path
+            package_qa_handle_error("split-strip", msg, d)
+            return type
+
+        # Not stripped
+        if "ELF" in result:
+            type |= 1
+            if "not stripped" not in result:
+                type |= 2
+            if "executable" in result:
+                type |= 4
+            if "shared" in result:
+                type |= 8
+        return type
+
+
     #
     # First lets figure out all of the files we may have to process ... do this only once!
     #

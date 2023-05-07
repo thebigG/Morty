@@ -153,10 +153,6 @@ BJAM_OPTS_append_class-native = ' -sNO_BZIP2=1'
 # Adjust the build for x32
 BJAM_OPTS_append_x86-x32 = " abi=x32 address-model=64"
 
-# cross compiling for arm fails to detect abi, so provide some help
-BJAM_OPTS_append_arm = " abi=aapcs architecture=arm"
-BJAM_OPTS_append_aarch64 = " abi=aapcs address-model=64 architecture=arm"
-
 do_configure() {
 	cd ${S}
 	cp -f ${S}/boost/config/platform/linux.hpp ${S}/boost/config/platform/linux-gnueabi.hpp

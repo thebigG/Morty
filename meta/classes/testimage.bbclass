@@ -393,15 +393,10 @@ def testimage_main(d):
         tc.target.stop()
 
     # Show results (if we have them)
-    if results:
-        configuration = get_testimage_configuration(d, 'runtime', machine)
-        results.logDetails(get_testimage_json_result_dir(d),
-                        configuration,
-                        get_testimage_result_id(configuration),
-                        dump_streams=d.getVar('TESTREPORT_FULLLOGS'))
-        results.logSummary(pn)
-    if not results or not complete:
+    if not results:
         bb.fatal('%s - FAILED - tests were interrupted during execution' % pn, forcelog=True)
+    results.logDetails()
+    results.logSummary(pn)
     if not results.wasSuccessful():
         bb.fatal('%s - FAILED - check the task log and the ssh log' % pn, forcelog=True)
 

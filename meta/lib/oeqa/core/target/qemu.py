@@ -39,13 +39,8 @@ class OEQemuTarget(OESSHTarget):
         self.runner = QemuRunner(machine=machine, rootfs=rootfs, tmpdir=tmpdir,
                                  deploy_dir_image=dir_image, display=display,
                                  logfile=bootlog, boottime=boottime,
-                                 use_kvm=kvm, use_slirp=slirp, dump_dir=dump_dir,
-                                 dump_host_cmds=dump_host_cmds, logger=logger,
-                                 serial_ports=serial_ports, boot_patterns = boot_patterns, 
-                                 use_ovmf=ovmf)
-        dump_target_cmds = kwargs.get("testimage_dump_target")
-        self.target_dumper = TargetDumper(dump_target_cmds, dump_dir, self.runner)
-        self.target_dumper.create_dir("qemu")
+                                 use_kvm=kvm, dump_dir=dump_dir,
+                                 dump_host_cmds=dump_host_cmds, logger=logger)
 
     def start(self, params=None, extra_bootparams=None, runqemuparams=''):
         if self.use_slirp and not self.server_ip:

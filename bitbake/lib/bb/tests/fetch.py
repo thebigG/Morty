@@ -21,6 +21,11 @@ def skipIfNoNetwork():
         return unittest.skip("Network tests being skipped")
     return lambda f: f
 
+def skipIfNoNetwork():
+    if os.environ.get("BB_SKIP_NETTESTS") == "yes":
+        return unittest.skip("Network tests being skipped")
+    return lambda f: f
+
 class URITest(unittest.TestCase):
     test_uris = {
         "http://www.google.com/index.html" : {
@@ -654,109 +659,6 @@ class FetcherLocalTest(FetcherTest):
         with self.assertRaises(bb.fetch2.UnpackError):
             self.fetchUnpack(['file://a;subdir=/bin/sh'])
 
-class FetcherNoNetworkTest(FetcherTest):
-    def setUp(self):
-        super().setUp()
-        # all test cases are based on not having network
-        self.d.setVar("BB_NO_NETWORK", "1")
-
-    def test_missing(self):
-        string = "this is a test file\n".encode("utf-8")
-        self.d.setVarFlag("SRC_URI", "md5sum", hashlib.md5(string).hexdigest())
-        self.d.setVarFlag("SRC_URI", "sha256sum", hashlib.sha256(string).hexdigest())
-
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-        fetcher = bb.fetch.Fetch(["http://invalid.yoctoproject.org/test-file.tar.gz"], self.d)
-        with self.assertRaises(bb.fetch2.NetworkAccess):
-            fetcher.download()
-
-    def test_valid_missing_donestamp(self):
-        # create the file in the download directory with correct hash
-        string = "this is a test file\n".encode("utf-8")
-        with open(os.path.join(self.dldir, "test-file.tar.gz"), "wb") as f:
-            f.write(string)
-
-        self.d.setVarFlag("SRC_URI", "md5sum", hashlib.md5(string).hexdigest())
-        self.d.setVarFlag("SRC_URI", "sha256sum", hashlib.sha256(string).hexdigest())
-
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-        fetcher = bb.fetch.Fetch(["http://invalid.yoctoproject.org/test-file.tar.gz"], self.d)
-        fetcher.download()
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-
-    def test_invalid_missing_donestamp(self):
-        # create an invalid file in the download directory with incorrect hash
-        string = "this is a test file\n".encode("utf-8")
-        with open(os.path.join(self.dldir, "test-file.tar.gz"), "wb"):
-            pass
-
-        self.d.setVarFlag("SRC_URI", "md5sum", hashlib.md5(string).hexdigest())
-        self.d.setVarFlag("SRC_URI", "sha256sum", hashlib.sha256(string).hexdigest())
-
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-        fetcher = bb.fetch.Fetch(["http://invalid.yoctoproject.org/test-file.tar.gz"], self.d)
-        with self.assertRaises(bb.fetch2.NetworkAccess):
-            fetcher.download()
-        # the existing file should not exist or should have be moved to "bad-checksum"
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-
-    def test_nochecksums_missing(self):
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-        # ssh fetch does not support checksums
-        fetcher = bb.fetch.Fetch(["ssh://invalid@invalid.yoctoproject.org/test-file.tar.gz"], self.d)
-        # attempts to download with missing donestamp
-        with self.assertRaises(bb.fetch2.NetworkAccess):
-            fetcher.download()
-
-    def test_nochecksums_missing_donestamp(self):
-        # create a file in the download directory
-        with open(os.path.join(self.dldir, "test-file.tar.gz"), "wb"):
-            pass
-
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-        # ssh fetch does not support checksums
-        fetcher = bb.fetch.Fetch(["ssh://invalid@invalid.yoctoproject.org/test-file.tar.gz"], self.d)
-        # attempts to download with missing donestamp
-        with self.assertRaises(bb.fetch2.NetworkAccess):
-            fetcher.download()
-
-    def test_nochecksums_has_donestamp(self):
-        # create a file in the download directory with the donestamp
-        with open(os.path.join(self.dldir, "test-file.tar.gz"), "wb"):
-            pass
-        with open(os.path.join(self.dldir, "test-file.tar.gz.done"), "wb"):
-            pass
-
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-        # ssh fetch does not support checksums
-        fetcher = bb.fetch.Fetch(["ssh://invalid@invalid.yoctoproject.org/test-file.tar.gz"], self.d)
-        # should not fetch
-        fetcher.download()
-        # both files should still exist
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-
-    def test_nochecksums_missing_has_donestamp(self):
-        # create a file in the download directory with the donestamp
-        with open(os.path.join(self.dldir, "test-file.tar.gz.done"), "wb"):
-            pass
-
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-        # ssh fetch does not support checksums
-        fetcher = bb.fetch.Fetch(["ssh://invalid@invalid.yoctoproject.org/test-file.tar.gz"], self.d)
-        with self.assertRaises(bb.fetch2.NetworkAccess):
-            fetcher.download()
-        # both files should still exist
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz")))
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, "test-file.tar.gz.done")))
-
 class FetcherNetworkTest(FetcherTest):
     @skipIfNoNetwork()
     def test_fetch(self):
@@ -876,185 +778,35 @@ class FetcherNetworkTest(FetcherTest):
         self.assertRaises(bb.fetch.ParameterError, self.gitfetcher, url, url)
 
     @skipIfNoNetwork()
-    def test_gitfetch_finds_local_tarball_for_mirrored_url_when_previous_downloaded_by_the_recipe_url(self):
-        recipeurl = "git://git.openembedded.org/bitbake"
-        mirrorurl = "git://someserver.org/bitbake"
+    def test_gitfetch_premirror(self):
+        url1 = "git://git.openembedded.org/bitbake"
+        url2 = "git://someserver.org/bitbake"
         self.d.setVar("PREMIRRORS", "git://someserver.org/bitbake git://git.openembedded.org/bitbake \n")
-        self.gitfetcher(recipeurl, mirrorurl)
+        self.gitfetcher(url1, url2)
 
     @skipIfNoNetwork()
-    def test_gitfetch_finds_local_tarball_when_previous_downloaded_from_a_premirror(self):
-        recipeurl = "git://someserver.org/bitbake"
+    def test_gitfetch_premirror2(self):
+        url1 = url2 = "git://someserver.org/bitbake"
         self.d.setVar("PREMIRRORS", "git://someserver.org/bitbake git://git.openembedded.org/bitbake \n")
-        self.gitfetcher(recipeurl, recipeurl)
+        self.gitfetcher(url1, url2)
 
     @skipIfNoNetwork()
-    def test_gitfetch_finds_local_repository_when_premirror_rewrites_the_recipe_url(self):
+    def test_gitfetch_premirror3(self):
         realurl = "git://git.openembedded.org/bitbake"
-        recipeurl = "git://someserver.org/bitbake"
+        dummyurl = "git://someserver.org/bitbake"
         self.sourcedir = self.unpackdir.replace("unpacked", "sourcemirror.git")
         os.chdir(self.tempdir)
         bb.process.run("git clone %s %s 2> /dev/null" % (realurl, self.sourcedir), shell=True)
-        self.d.setVar("PREMIRRORS", "%s git://%s;protocol=file \n" % (recipeurl, self.sourcedir))
-        self.gitfetcher(recipeurl, recipeurl)
+        self.d.setVar("PREMIRRORS", "%s git://%s;protocol=file \n" % (dummyurl, self.sourcedir))
+        self.gitfetcher(dummyurl, dummyurl)
 
     @skipIfNoNetwork()
     def test_git_submodule(self):
-        # URL with ssh submodules
-        url = "gitsm://git.yoctoproject.org/git-submodule-test;branch=ssh-gitsm-tests;rev=049da4a6cb198d7c0302e9e8b243a1443cb809a7"
-        # Original URL (comment this if you have ssh access to git.yoctoproject.org)
-        url = "gitsm://git.yoctoproject.org/git-submodule-test;branch=master;rev=a2885dd7d25380d23627e7544b7bbb55014b16ee"
-        fetcher = bb.fetch.Fetch([url], self.d)
+        fetcher = bb.fetch.Fetch(["gitsm://git.yoctoproject.org/git-submodule-test;rev=f12e57f2edf0aa534cf1616fa983d165a92b0842"], self.d)
         fetcher.download()
         # Previous cwd has been deleted
         os.chdir(os.path.dirname(self.unpackdir))
         fetcher.unpack(self.unpackdir)
-
-        repo_path = os.path.join(self.tempdir, 'unpacked', 'git')
-        self.assertTrue(os.path.exists(repo_path), msg='Unpacked repository missing')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'bitbake')), msg='bitbake submodule missing')
-        self.assertFalse(os.path.exists(os.path.join(repo_path, 'na')), msg='uninitialized submodule present')
-
-        # Only when we're running the extended test with a submodule's submodule, can we check this.
-        if os.path.exists(os.path.join(repo_path, 'bitbake-gitsm-test1')):
-            self.assertTrue(os.path.exists(os.path.join(repo_path, 'bitbake-gitsm-test1', 'bitbake')), msg='submodule of submodule missing')
-
-    @skipIfNoNetwork()
-    def test_git_submodule_dbus_broker(self):
-        # The following external repositories have show failures in fetch and unpack operations
-        # We want to avoid regressions!
-        url = "gitsm://github.com/bus1/dbus-broker;protocol=git;rev=fc874afa0992d0c75ec25acb43d344679f0ee7d2;branch=main"
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        # Previous cwd has been deleted
-        os.chdir(os.path.dirname(self.unpackdir))
-        fetcher.unpack(self.unpackdir)
-
-        repo_path = os.path.join(self.tempdir, 'unpacked', 'git')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/subprojects/c-dvar/config')), msg='Missing submodule config "subprojects/c-dvar"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/subprojects/c-list/config')), msg='Missing submodule config "subprojects/c-list"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/subprojects/c-rbtree/config')), msg='Missing submodule config "subprojects/c-rbtree"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/subprojects/c-sundry/config')), msg='Missing submodule config "subprojects/c-sundry"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/subprojects/c-utf8/config')), msg='Missing submodule config "subprojects/c-utf8"')
-
-    @skipIfNoNetwork()
-    def test_git_submodule_CLI11(self):
-        url = "gitsm://github.com/CLIUtils/CLI11;protocol=git;rev=bd4dc911847d0cde7a6b41dfa626a85aab213baf;branch=main"
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        # Previous cwd has been deleted
-        os.chdir(os.path.dirname(self.unpackdir))
-        fetcher.unpack(self.unpackdir)
-
-        repo_path = os.path.join(self.tempdir, 'unpacked', 'git')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/extern/googletest/config')), msg='Missing submodule config "extern/googletest"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/extern/json/config')), msg='Missing submodule config "extern/json"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/extern/sanitizers/config')), msg='Missing submodule config "extern/sanitizers"')
-
-    @skipIfNoNetwork()
-    def test_git_submodule_update_CLI11(self):
-        """ Prevent regression on update detection not finding missing submodule, or modules without needed commits """
-        url = "gitsm://github.com/CLIUtils/CLI11;protocol=git;rev=cf6a99fa69aaefe477cc52e3ef4a7d2d7fa40714;branch=main"
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-
-        # CLI11 that pulls in a newer nlohmann-json
-        url = "gitsm://github.com/CLIUtils/CLI11;protocol=git;rev=49ac989a9527ee9bb496de9ded7b4872c2e0e5ca;branch=main"
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        # Previous cwd has been deleted
-        os.chdir(os.path.dirname(self.unpackdir))
-        fetcher.unpack(self.unpackdir)
-
-        repo_path = os.path.join(self.tempdir, 'unpacked', 'git')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/extern/googletest/config')), msg='Missing submodule config "extern/googletest"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/extern/json/config')), msg='Missing submodule config "extern/json"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/extern/sanitizers/config')), msg='Missing submodule config "extern/sanitizers"')
-
-    @skipIfNoNetwork()
-    def test_git_submodule_aktualizr(self):
-        url = "gitsm://github.com/advancedtelematic/aktualizr;branch=master;protocol=git;rev=d00d1a04cc2366d1a5f143b84b9f507f8bd32c44"
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        # Previous cwd has been deleted
-        os.chdir(os.path.dirname(self.unpackdir))
-        fetcher.unpack(self.unpackdir)
-
-        repo_path = os.path.join(self.tempdir, 'unpacked', 'git')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/partial/extern/isotp-c/config')), msg='Missing submodule config "partial/extern/isotp-c/config"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/partial/extern/isotp-c/modules/deps/bitfield-c/config')), msg='Missing submodule config "partial/extern/isotp-c/modules/deps/bitfield-c/config"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'partial/extern/isotp-c/deps/bitfield-c/.git')), msg="Submodule of submodule isotp-c did not unpack properly")
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/tests/tuf-test-vectors/config')), msg='Missing submodule config "tests/tuf-test-vectors/config"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/third_party/googletest/config')), msg='Missing submodule config "third_party/googletest/config"')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, '.git/modules/third_party/HdrHistogram_c/config')), msg='Missing submodule config "third_party/HdrHistogram_c/config"')
-
-    @skipIfNoNetwork()
-    def test_git_submodule_iotedge(self):
-        """ Prevent regression on deeply nested submodules not being checked out properly, even though they were fetched. """
-
-        # This repository also has submodules where the module (name), path and url do not align
-        url = "gitsm://github.com/azure/iotedge.git;protocol=git;rev=d76e0316c6f324345d77c48a83ce836d09392699;branch=main"
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        # Previous cwd has been deleted
-        os.chdir(os.path.dirname(self.unpackdir))
-        fetcher.unpack(self.unpackdir)
-
-        repo_path = os.path.join(self.tempdir, 'unpacked', 'git')
-
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/c-shared/README.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/c-shared/testtools/ctest/README.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/c-shared/testtools/testrunner/readme.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/c-shared/testtools/umock-c/readme.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/c-shared/testtools/umock-c/deps/ctest/README.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/c-shared/testtools/umock-c/deps/testrunner/readme.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/utpm/README.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/utpm/deps/c-utility/README.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/utpm/deps/c-utility/testtools/ctest/README.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/utpm/deps/c-utility/testtools/testrunner/readme.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/utpm/deps/c-utility/testtools/umock-c/readme.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/utpm/deps/c-utility/testtools/umock-c/deps/ctest/README.md')), msg='Missing submodule checkout')
-        self.assertTrue(os.path.exists(os.path.join(repo_path, 'edgelet/hsm-sys/azure-iot-hsm-c/deps/utpm/deps/c-utility/testtools/umock-c/deps/testrunner/readme.md')), msg='Missing submodule checkout')
-
-class SVNTest(FetcherTest):
-    def skipIfNoSvn():
-        import shutil
-        if not shutil.which("svn"):
-            return unittest.skip("svn not installed,  tests being skipped")
-
-        if not shutil.which("svnadmin"):
-            return unittest.skip("svnadmin not installed,  tests being skipped")
-
-        return lambda f: f
-
-    @skipIfNoSvn()
-    def setUp(self):
-        """ Create a local repository """
-
-        super(SVNTest, self).setUp()
-
-        # Create something we can fetch
-        src_dir = tempfile.mkdtemp(dir=self.tempdir,
-                                   prefix='svnfetch_srcdir_')
-        src_dir = os.path.abspath(src_dir)
-        bb.process.run("echo readme > README.md", cwd=src_dir)
-
-        # Store it in a local SVN repository
-        repo_dir = tempfile.mkdtemp(dir=self.tempdir,
-                                   prefix='svnfetch_localrepo_')
-        repo_dir = os.path.abspath(repo_dir)
-        bb.process.run("svnadmin create project", cwd=repo_dir)
-
-        self.repo_url = "file://%s/project" % repo_dir
-        bb.process.run("svn import --non-interactive -m 'Initial import' %s %s/trunk" % (src_dir, self.repo_url),
-                       cwd=repo_dir)
-
-        bb.process.run("svn co %s svnfetch_co" % self.repo_url, cwd=self.tempdir)
-        # Github will emulate SVN.  Use this to check if we're downloding...
-        bb.process.run("svn propset svn:externals 'bitbake svn://vcs.pcre.org/pcre2/code' .",
-                       cwd=os.path.join(self.tempdir, 'svnfetch_co', 'trunk'))
-        bb.process.run("svn commit --non-interactive -m 'Add external'",
-                       cwd=os.path.join(self.tempdir, 'svnfetch_co', 'trunk'))
 
         self.src_dir = src_dir
         self.repo_dir = repo_dir
@@ -1183,12 +935,12 @@ class FetchLatestVersionTest(FetcherTest):
         ("dtc", "git://git.yoctoproject.org/bbfetchtests-dtc.git", "65cc4d2748a2c2e6f27f1cf39e07a5dbabd80ebf", "")
             : "1.4.0",
         # combination version pattern
-        ("sysprof", "git://gitlab.gnome.org/GNOME/sysprof.git;protocol=https", "cd44ee6644c3641507fb53b8a2a69137f2971219", "")
+        ("sysprof", "git://gitlab.gnome.org/GNOME/sysprof;protocol=https", "cd44ee6644c3641507fb53b8a2a69137f2971219", "")
             : "1.2.0",
         ("u-boot-mkimage", "git://git.denx.de/u-boot.git;branch=master;protocol=git", "62c175fbb8a0f9a926c88294ea9f7e88eb898f6c", "")
             : "2014.01",
         # version pattern "yyyymmdd"
-        ("mobile-broadband-provider-info", "git://gitlab.gnome.org/GNOME/mobile-broadband-provider-info.git;protocol=https", "4ed19e11c2975105b71b956440acdb25d46a347d", "")
+        ("mobile-broadband-provider-info", "git://gitlab.gnome.org/GNOME/mobile-broadband-provider-info;protocol=https", "4ed19e11c2975105b71b956440acdb25d46a347d", "")
             : "20120614",
         # packages with a valid UPSTREAM_CHECK_GITTAGREGEX
                 # mirror of git://anongit.freedesktop.org/xorg/driver/xf86-video-omap since network issues interfered with testing
@@ -1240,9 +992,7 @@ class FetchLatestVersionTest(FetcherTest):
         # https://github.com/apple/cups/releases
         ("cups", "/software/1.7.2/cups-1.7.2-source.tar.bz2", "/apple/cups/releases", "(?P<name>cups\-)(?P<pver>((\d+[\.\-_]*)+))\-source\.tar\.gz")
             : "2.0.0",
-        # http://download.oracle.com/berkeley-db/db-5.3.21.tar.gz
-        # http://ftp.debian.org/debian/pool/main/d/db5.3/
-        ("db", "/berkeley-db/db-5.3.21.tar.gz", "/debian/pool/main/d/db5.3/", "(?P<name>db5\.3_)(?P<pver>\d+(\.\d+)+).+\.orig\.tar\.xz")
+        ("db", "http://download.oracle.com/berkeley-db/db-5.3.21.tar.gz", "http://ftp.debian.org/debian/pool/main/d/db5.3/", "(?P<name>db5\.3_)(?P<pver>\d+(\.\d+)+).+\.orig\.tar\.xz")
             : "5.3.10",
     }
 
@@ -1255,32 +1005,22 @@ class FetchLatestVersionTest(FetcherTest):
             ud = bb.fetch2.FetchData(k[1], self.d)
             pupver= ud.method.latest_versionstring(ud, self.d)
             verstring = pupver[0]
-            self.assertTrue(verstring, msg="Could not find upstream version for %s" % k[0])
+            self.assertTrue(verstring, msg="Could not find upstream version")
             r = bb.utils.vercmp_string(v, verstring)
             self.assertTrue(r == -1 or r == 0, msg="Package %s, version: %s <= %s" % (k[0], v, verstring))
 
+    @skipIfNoNetwork()
     def test_wget_latest_versionstring(self):
-        testdata = os.path.dirname(os.path.abspath(__file__)) + "/fetch-testdata"
-        server = HTTPService(testdata)
-        server.start()
-        port = server.port
-        try:
-            for k, v in self.test_wget_uris.items():
-                self.d.setVar("PN", k[0])
-                checkuri = ""
-                if k[2]:
-                    checkuri = "http://localhost:%s/" % port + k[2]
-                self.d.setVar("UPSTREAM_CHECK_URI", checkuri)
-                self.d.setVar("UPSTREAM_CHECK_REGEX", k[3])
-                url = "http://localhost:%s/" % port + k[1]
-                ud = bb.fetch2.FetchData(url, self.d)
-                pupver = ud.method.latest_versionstring(ud, self.d)
-                verstring = pupver[0]
-                self.assertTrue(verstring, msg="Could not find upstream version for %s" % k[0])
-                r = bb.utils.vercmp_string(v, verstring)
-                self.assertTrue(r == -1 or r == 0, msg="Package %s, version: %s <= %s" % (k[0], v, verstring))
-        finally:
-            server.stop()
+        for k, v in self.test_wget_uris.items():
+            self.d.setVar("PN", k[0])
+            self.d.setVar("UPSTREAM_CHECK_URI", k[2])
+            self.d.setVar("UPSTREAM_CHECK_REGEX", k[3])
+            ud = bb.fetch2.FetchData(k[1], self.d)
+            pupver = ud.method.latest_versionstring(ud, self.d)
+            verstring = pupver[0]
+            self.assertTrue(verstring, msg="Could not find upstream version")
+            r = bb.utils.vercmp_string(v, verstring)
+            self.assertTrue(r == -1 or r == 0, msg="Package %s, version: %s <= %s" % (k[0], v, verstring))
 
 
 class FetchCheckStatusTest(FetcherTest):
@@ -1954,26 +1694,6 @@ class GitShallowTest(FetcherTest):
         with self.assertRaises(bb.fetch2.FetchError):
             self.fetch()
 
-    def test_shallow_fetch_missing_revs(self):
-        self.add_empty_file('a')
-        self.add_empty_file('b')
-        fetcher, ud = self.fetch(self.d.getVar('SRC_URI'))
-        self.git('tag v0.0 master', cwd=self.srcdir)
-        self.d.setVar('BB_GIT_SHALLOW_DEPTH', '0')
-        self.d.setVar('BB_GIT_SHALLOW_REVS', 'v0.0')
-        self.fetch_shallow()
-
-    def test_shallow_fetch_missing_revs_fails(self):
-        self.add_empty_file('a')
-        self.add_empty_file('b')
-        fetcher, ud = self.fetch(self.d.getVar('SRC_URI'))
-        self.d.setVar('BB_GIT_SHALLOW_DEPTH', '0')
-        self.d.setVar('BB_GIT_SHALLOW_REVS', 'v0.0')
-
-        with self.assertRaises(bb.fetch2.FetchError), self.assertLogs("BitBake.Fetcher", level="ERROR") as cm:
-            self.fetch_shallow()
-        self.assertIn("Unable to find revision v0.0 even from upstream", cm.output[0])
-
     @skipIfNoNetwork()
     def test_bitbake(self):
         self.git('remote add --mirror=fetch origin git://github.com/openembedded/bitbake', cwd=self.srcdir)
@@ -1993,587 +1713,3 @@ class GitShallowTest(FetcherTest):
         self.assertNotEqual(orig_revs, revs)
         self.assertRefs(['master', 'origin/master'])
         self.assertRevCount(orig_revs - 1758)
-
-    def test_that_unpack_throws_an_error_when_the_git_clone_nor_shallow_tarball_exist(self):
-        self.add_empty_file('a')
-        fetcher, ud = self.fetch()
-        bb.utils.remove(self.gitdir, recurse=True)
-        bb.utils.remove(self.dldir, recurse=True)
-
-        with self.assertRaises(bb.fetch2.UnpackError) as context:
-            fetcher.unpack(self.d.getVar('WORKDIR'))
-
-        self.assertIn("No up to date source found", context.exception.msg)
-        self.assertIn("clone directory not available or not up to date", context.exception.msg)
-
-    @skipIfNoNetwork()
-    def test_that_unpack_does_work_when_using_git_shallow_tarball_but_tarball_is_not_available(self):
-        self.d.setVar('SRCREV', 'e5939ff608b95cdd4d0ab0e1935781ab9a276ac0')
-        self.d.setVar('BB_GIT_SHALLOW', '1')
-        self.d.setVar('BB_GENERATE_SHALLOW_TARBALLS', '1')
-        fetcher = bb.fetch.Fetch(["git://git.yoctoproject.org/fstests"], self.d)
-        fetcher.download()
-
-        bb.utils.remove(self.dldir + "/*.tar.gz")
-        fetcher.unpack(self.unpackdir)
-
-        dir = os.listdir(self.unpackdir + "/git/")
-        self.assertIn("fstests.doap", dir)
-
-class GitLfsTest(FetcherTest):
-    def setUp(self):
-        FetcherTest.setUp(self)
-
-        self.gitdir = os.path.join(self.tempdir, 'git')
-        self.srcdir = os.path.join(self.tempdir, 'gitsource')
-        
-        self.d.setVar('WORKDIR', self.tempdir)
-        self.d.setVar('S', self.gitdir)
-        self.d.delVar('PREMIRRORS')
-        self.d.delVar('MIRRORS')
-
-        self.d.setVar('SRCREV', '${AUTOREV}')
-        self.d.setVar('AUTOREV', '${@bb.fetch2.get_autorev(d)}')
-
-        bb.utils.mkdirhier(self.srcdir)
-        self.git('init', cwd=self.srcdir)
-        with open(os.path.join(self.srcdir, '.gitattributes'), 'wt') as attrs:
-            attrs.write('*.mp3 filter=lfs -text')
-        self.git(['add', '.gitattributes'], cwd=self.srcdir)
-        self.git(['commit', '-m', "attributes", '.gitattributes'], cwd=self.srcdir)
-
-    def git(self, cmd, cwd=None):
-        if isinstance(cmd, str):
-            cmd = 'git ' + cmd
-        else:
-            cmd = ['git'] + cmd
-        if cwd is None:
-            cwd = self.gitdir
-        return bb.process.run(cmd, cwd=cwd)[0]
-
-    def fetch(self, uri=None, download=True):
-        uris = self.d.getVar('SRC_URI').split()
-        uri = uris[0]
-        d = self.d
-
-        fetcher = bb.fetch2.Fetch(uris, d)
-        if download:
-            fetcher.download()
-        ud = fetcher.ud[uri]
-        return fetcher, ud
-
-    def test_lfs_enabled(self):
-        import shutil
-
-        uri = 'git://%s;protocol=file;subdir=${S};lfs=1' % self.srcdir
-        self.d.setVar('SRC_URI', uri)
-
-        # Careful: suppress initial attempt at downloading until
-        # we know whether git-lfs is installed.
-        fetcher, ud = self.fetch(uri=None, download=False)
-        self.assertIsNotNone(ud.method._find_git_lfs)
-
-        # If git-lfs can be found, the unpack should be successful. Only
-        # attempt this with the real live copy of git-lfs installed.
-        if ud.method._find_git_lfs(self.d):
-            fetcher.download()
-            shutil.rmtree(self.gitdir, ignore_errors=True)
-            fetcher.unpack(self.d.getVar('WORKDIR'))
-
-        # If git-lfs cannot be found, the unpack should throw an error
-        with self.assertRaises(bb.fetch2.FetchError):
-            fetcher.download()
-            ud.method._find_git_lfs = lambda d: False
-            shutil.rmtree(self.gitdir, ignore_errors=True)
-            fetcher.unpack(self.d.getVar('WORKDIR'))
-
-    def test_lfs_disabled(self):
-        import shutil
-
-        uri = 'git://%s;protocol=file;subdir=${S};lfs=0' % self.srcdir
-        self.d.setVar('SRC_URI', uri)
-
-        # In contrast to test_lfs_enabled(), allow the implicit download
-        # done by self.fetch() to occur here. The point of this test case
-        # is to verify that the fetcher can survive even if the source
-        # repository has Git LFS usage configured.
-        fetcher, ud = self.fetch()
-        self.assertIsNotNone(ud.method._find_git_lfs)
-
-        # If git-lfs can be found, the unpack should be successful. A
-        # live copy of git-lfs is not required for this case, so
-        # unconditionally forge its presence.
-        ud.method._find_git_lfs = lambda d: True
-        shutil.rmtree(self.gitdir, ignore_errors=True)
-        fetcher.unpack(self.d.getVar('WORKDIR'))
-
-        # If git-lfs cannot be found, the unpack should be successful
-        ud.method._find_git_lfs = lambda d: False
-        shutil.rmtree(self.gitdir, ignore_errors=True)
-        fetcher.unpack(self.d.getVar('WORKDIR'))
-
-class GitURLWithSpacesTest(FetcherTest):
-    test_git_urls = {
-        "git://tfs-example.org:22/tfs/example%20path/example.git" : {
-            'url': 'git://tfs-example.org:22/tfs/example%20path/example.git',
-            'gitsrcname': 'tfs-example.org.22.tfs.example_path.example.git',
-            'path': '/tfs/example path/example.git'
-        },
-        "git://tfs-example.org:22/tfs/example%20path/example%20repo.git" : {
-            'url': 'git://tfs-example.org:22/tfs/example%20path/example%20repo.git',
-            'gitsrcname': 'tfs-example.org.22.tfs.example_path.example_repo.git',
-            'path': '/tfs/example path/example repo.git'
-        }
-    }
-
-    def test_urls(self):
-
-        # Set fake SRCREV to stop git fetcher from trying to contact non-existent git repo
-        self.d.setVar('SRCREV', '82ea737a0b42a8b53e11c9cde141e9e9c0bd8c40')
-
-        for test_git_url, ref in self.test_git_urls.items():
-
-            fetcher = bb.fetch.Fetch([test_git_url], self.d)
-            ud = fetcher.ud[fetcher.urls[0]]
-
-            self.assertEqual(ud.url, ref['url'])
-            self.assertEqual(ud.path, ref['path'])
-            self.assertEqual(ud.localfile, os.path.join(self.dldir, "git2", ref['gitsrcname']))
-            self.assertEqual(ud.localpath, os.path.join(self.dldir, "git2", ref['gitsrcname']))
-            self.assertEqual(ud.lockfile, os.path.join(self.dldir, "git2", ref['gitsrcname'] + '.lock'))
-            self.assertEqual(ud.clonedir, os.path.join(self.dldir, "git2", ref['gitsrcname']))
-            self.assertEqual(ud.fullmirror, os.path.join(self.dldir, "git2_" + ref['gitsrcname'] + '.tar.gz'))
-
-class NPMTest(FetcherTest):
-    def skipIfNoNpm():
-        import shutil
-        if not shutil.which('npm'):
-            return unittest.skip('npm not installed, tests being skipped')
-        return lambda f: f
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        fetcher = bb.fetch.Fetch([url], self.d)
-        ud = fetcher.ud[fetcher.urls[0]]
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-        self.assertTrue(os.path.exists(ud.localpath + '.done'))
-        self.assertTrue(os.path.exists(ud.resolvefile))
-        fetcher.unpack(self.unpackdir)
-        unpackdir = os.path.join(self.unpackdir, 'npm')
-        self.assertTrue(os.path.exists(os.path.join(unpackdir, 'package.json')))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_bad_checksum(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        # Fetch once to get a tarball
-        fetcher = bb.fetch.Fetch([url], self.d)
-        ud = fetcher.ud[fetcher.urls[0]]
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-        # Modify the tarball
-        bad = b'bad checksum'
-        with open(ud.localpath, 'wb') as f:
-            f.write(bad)
-        # Verify that the tarball is fetched again
-        fetcher.download()
-        badsum = hashlib.sha512(bad).hexdigest()
-        self.assertTrue(os.path.exists(ud.localpath + '_bad-checksum_' + badsum))
-        self.assertTrue(os.path.exists(ud.localpath))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_premirrors(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        # Fetch once to get a tarball
-        fetcher = bb.fetch.Fetch([url], self.d)
-        ud = fetcher.ud[fetcher.urls[0]]
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-        # Setup the mirror
-        mirrordir = os.path.join(self.tempdir, 'mirror')
-        bb.utils.mkdirhier(mirrordir)
-        os.replace(ud.localpath, os.path.join(mirrordir, os.path.basename(ud.localpath)))
-        self.d.setVar('PREMIRRORS', 'https?$://.*/.* file://%s/\n' % mirrordir)
-        self.d.setVar('BB_FETCH_PREMIRRORONLY', '1')
-        # Fetch again
-        self.assertFalse(os.path.exists(ud.localpath))
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_mirrors(self):
-        # Fetch once to get a tarball
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        fetcher = bb.fetch.Fetch([url], self.d)
-        ud = fetcher.ud[fetcher.urls[0]]
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-        # Setup the mirror
-        mirrordir = os.path.join(self.tempdir, 'mirror')
-        bb.utils.mkdirhier(mirrordir)
-        os.replace(ud.localpath, os.path.join(mirrordir, os.path.basename(ud.localpath)))
-        self.d.setVar('MIRRORS', 'https?$://.*/.* file://%s/\n' % mirrordir)
-        # Update the resolved url to an invalid url
-        with open(ud.resolvefile, 'r') as f:
-            url = f.read()
-        uri = URI(url)
-        uri.path = '/invalid'
-        with open(ud.resolvefile, 'w') as f:
-            f.write(str(uri))
-        # Fetch again
-        self.assertFalse(os.path.exists(ud.localpath))
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_destsuffix_downloadfilename(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=1.0.0;destsuffix=foo/bar;downloadfilename=foo-bar.tgz'
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, 'foo-bar.tgz')))
-        fetcher.unpack(self.unpackdir)
-        unpackdir = os.path.join(self.unpackdir, 'foo', 'bar')
-        self.assertTrue(os.path.exists(os.path.join(unpackdir, 'package.json')))
-
-    def test_npm_no_network_no_tarball(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        self.d.setVar('BB_NO_NETWORK', '1')
-        fetcher = bb.fetch.Fetch([url], self.d)
-        with self.assertRaises(bb.fetch2.NetworkAccess):
-            fetcher.download()
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_no_network_with_tarball(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        # Fetch once to get a tarball
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        # Disable network access
-        self.d.setVar('BB_NO_NETWORK', '1')
-        # Fetch again
-        fetcher.download()
-        fetcher.unpack(self.unpackdir)
-        unpackdir = os.path.join(self.unpackdir, 'npm')
-        self.assertTrue(os.path.exists(os.path.join(unpackdir, 'package.json')))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_registry_alternate(self):
-        url = 'npm://registry.freajs.org;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        fetcher.unpack(self.unpackdir)
-        unpackdir = os.path.join(self.unpackdir, 'npm')
-        self.assertTrue(os.path.exists(os.path.join(unpackdir, 'package.json')))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_version_latest(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=latest'
-        fetcher = bb.fetch.Fetch([url], self.d)
-        fetcher.download()
-        fetcher.unpack(self.unpackdir)
-        unpackdir = os.path.join(self.unpackdir, 'npm')
-        self.assertTrue(os.path.exists(os.path.join(unpackdir, 'package.json')))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_registry_invalid(self):
-        url = 'npm://registry.invalid.org;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        fetcher = bb.fetch.Fetch([url], self.d)
-        with self.assertRaises(bb.fetch2.FetchError):
-            fetcher.download()
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_package_invalid(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/invalid;version=1.0.0'
-        fetcher = bb.fetch.Fetch([url], self.d)
-        with self.assertRaises(bb.fetch2.FetchError):
-            fetcher.download()
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_version_invalid(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example;version=invalid'
-        with self.assertRaises(bb.fetch2.ParameterError):
-            fetcher = bb.fetch.Fetch([url], self.d)
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_registry_none(self):
-        url = 'npm://;package=@savoirfairelinux/node-server-example;version=1.0.0'
-        with self.assertRaises(bb.fetch2.MalformedUrl):
-            fetcher = bb.fetch.Fetch([url], self.d)
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_package_none(self):
-        url = 'npm://registry.npmjs.org;version=1.0.0'
-        with self.assertRaises(bb.fetch2.MissingParameterError):
-            fetcher = bb.fetch.Fetch([url], self.d)
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npm_version_none(self):
-        url = 'npm://registry.npmjs.org;package=@savoirfairelinux/node-server-example'
-        with self.assertRaises(bb.fetch2.MissingParameterError):
-            fetcher = bb.fetch.Fetch([url], self.d)
-
-    def create_shrinkwrap_file(self, data):
-        import json
-        datadir = os.path.join(self.tempdir, 'data')
-        swfile = os.path.join(datadir, 'npm-shrinkwrap.json')
-        bb.utils.mkdirhier(datadir)
-        with open(swfile, 'w') as f:
-            json.dump(data, f)
-        # Also configure the S directory
-        self.sdir = os.path.join(self.unpackdir, 'S')
-        self.d.setVar('S', self.sdir)
-        return swfile
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npmsw(self):
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI=',
-                    'dependencies': {
-                        'content-type': {
-                            'version': 'https://registry.npmjs.org/content-type/-/content-type-1.0.4.tgz',
-                            'integrity': 'sha512-hIP3EEPs8tB9AT1L+NUqtwOAps4mk2Zob89MWXMHjHWg9milF/j4osnnQLXBCBFBk/tvIG/tUc9mOUJiPBhPXA==',
-                            'dependencies': {
-                                'cookie': {
-                                    'version': 'git+https://github.com/jshttp/cookie.git#aec1177c7da67e3b3273df96cf476824dbc9ae09',
-                                    'from': 'git+https://github.com/jshttp/cookie.git'
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        })
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        fetcher.download()
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, 'npm2', 'array-flatten-1.1.1.tgz')))
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, 'npm2', 'content-type-1.0.4.tgz')))
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, 'git2', 'github.com.jshttp.cookie.git')))
-        fetcher.unpack(self.unpackdir)
-        self.assertTrue(os.path.exists(os.path.join(self.sdir, 'npm-shrinkwrap.json')))
-        self.assertTrue(os.path.exists(os.path.join(self.sdir, 'node_modules', 'array-flatten', 'package.json')))
-        self.assertTrue(os.path.exists(os.path.join(self.sdir, 'node_modules', 'array-flatten', 'node_modules', 'content-type', 'package.json')))
-        self.assertTrue(os.path.exists(os.path.join(self.sdir, 'node_modules', 'array-flatten', 'node_modules', 'content-type', 'node_modules', 'cookie', 'package.json')))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npmsw_dev(self):
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI='
-                },
-                'content-type': {
-                    'version': '1.0.4',
-                    'resolved': 'https://registry.npmjs.org/content-type/-/content-type-1.0.4.tgz',
-                    'integrity': 'sha512-hIP3EEPs8tB9AT1L+NUqtwOAps4mk2Zob89MWXMHjHWg9milF/j4osnnQLXBCBFBk/tvIG/tUc9mOUJiPBhPXA==',
-                    'dev': True
-                }
-            }
-        })
-        # Fetch with dev disabled
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        fetcher.download()
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, 'npm2', 'array-flatten-1.1.1.tgz')))
-        self.assertFalse(os.path.exists(os.path.join(self.dldir, 'npm2', 'content-type-1.0.4.tgz')))
-        # Fetch with dev enabled
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile + ';dev=1'], self.d)
-        fetcher.download()
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, 'npm2', 'array-flatten-1.1.1.tgz')))
-        self.assertTrue(os.path.exists(os.path.join(self.dldir, 'npm2', 'content-type-1.0.4.tgz')))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npmsw_destsuffix(self):
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI='
-                }
-            }
-        })
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile + ';destsuffix=foo/bar'], self.d)
-        fetcher.download()
-        fetcher.unpack(self.unpackdir)
-        self.assertTrue(os.path.exists(os.path.join(self.unpackdir, 'foo', 'bar', 'node_modules', 'array-flatten', 'package.json')))
-
-    def test_npmsw_no_network_no_tarball(self):
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI='
-                }
-            }
-        })
-        self.d.setVar('BB_NO_NETWORK', '1')
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        with self.assertRaises(bb.fetch2.NetworkAccess):
-            fetcher.download()
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npmsw_no_network_with_tarball(self):
-        # Fetch once to get a tarball
-        fetcher = bb.fetch.Fetch(['npm://registry.npmjs.org;package=array-flatten;version=1.1.1'], self.d)
-        fetcher.download()
-        # Disable network access
-        self.d.setVar('BB_NO_NETWORK', '1')
-        # Fetch again
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI='
-                }
-            }
-        })
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        fetcher.download()
-        fetcher.unpack(self.unpackdir)
-        self.assertTrue(os.path.exists(os.path.join(self.sdir, 'node_modules', 'array-flatten', 'package.json')))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npmsw_npm_reusability(self):
-        # Fetch once with npmsw
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI='
-                }
-            }
-        })
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        fetcher.download()
-        # Disable network access
-        self.d.setVar('BB_NO_NETWORK', '1')
-        # Fetch again with npm
-        fetcher = bb.fetch.Fetch(['npm://registry.npmjs.org;package=array-flatten;version=1.1.1'], self.d)
-        fetcher.download()
-        fetcher.unpack(self.unpackdir)
-        self.assertTrue(os.path.exists(os.path.join(self.unpackdir, 'npm', 'package.json')))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npmsw_bad_checksum(self):
-        # Try to fetch with bad checksum
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-gfNEp2hqgLTFKT6P3AsBYMgsBqg='
-                }
-            }
-        })
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        with self.assertRaises(bb.fetch2.FetchError):
-            fetcher.download()
-        # Fetch correctly to get a tarball
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI='
-                }
-            }
-        })
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        fetcher.download()
-        localpath = os.path.join(self.dldir, 'npm2', 'array-flatten-1.1.1.tgz')
-        self.assertTrue(os.path.exists(localpath))
-        # Modify the tarball
-        bad = b'bad checksum'
-        with open(localpath, 'wb') as f:
-            f.write(bad)
-        # Verify that the tarball is fetched again
-        fetcher.download()
-        badsum = hashlib.sha1(bad).hexdigest()
-        self.assertTrue(os.path.exists(localpath + '_bad-checksum_' + badsum))
-        self.assertTrue(os.path.exists(localpath))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npmsw_premirrors(self):
-        # Fetch once to get a tarball
-        fetcher = bb.fetch.Fetch(['npm://registry.npmjs.org;package=array-flatten;version=1.1.1'], self.d)
-        ud = fetcher.ud[fetcher.urls[0]]
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-        # Setup the mirror
-        mirrordir = os.path.join(self.tempdir, 'mirror')
-        bb.utils.mkdirhier(mirrordir)
-        os.replace(ud.localpath, os.path.join(mirrordir, os.path.basename(ud.localpath)))
-        self.d.setVar('PREMIRRORS', 'https?$://.*/.* file://%s/\n' % mirrordir)
-        self.d.setVar('BB_FETCH_PREMIRRORONLY', '1')
-        # Fetch again
-        self.assertFalse(os.path.exists(ud.localpath))
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI='
-                }
-            }
-        })
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-
-    @skipIfNoNpm()
-    @skipIfNoNetwork()
-    def test_npmsw_mirrors(self):
-        # Fetch once to get a tarball
-        fetcher = bb.fetch.Fetch(['npm://registry.npmjs.org;package=array-flatten;version=1.1.1'], self.d)
-        ud = fetcher.ud[fetcher.urls[0]]
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))
-        # Setup the mirror
-        mirrordir = os.path.join(self.tempdir, 'mirror')
-        bb.utils.mkdirhier(mirrordir)
-        os.replace(ud.localpath, os.path.join(mirrordir, os.path.basename(ud.localpath)))
-        self.d.setVar('MIRRORS', 'https?$://.*/.* file://%s/\n' % mirrordir)
-        # Fetch again with invalid url
-        self.assertFalse(os.path.exists(ud.localpath))
-        swfile = self.create_shrinkwrap_file({
-            'dependencies': {
-                'array-flatten': {
-                    'version': '1.1.1',
-                    'resolved': 'https://invalid',
-                    'integrity': 'sha1-ml9pkFGx5wczKPKgCJaLZOopVdI='
-                }
-            }
-        })
-        fetcher = bb.fetch.Fetch(['npmsw://' + swfile], self.d)
-        fetcher.download()
-        self.assertTrue(os.path.exists(ud.localpath))

@@ -724,8 +724,6 @@ fakeroot python do_populate_sdk_ext() {
     d.setVar('SDKDEPLOYDIR', '${SDKEXTDEPLOYDIR}')
     # ESDKs have a libc from the buildtools so ensure we don't ship linguas twice
     d.delVar('SDKIMAGE_LINGUAS')
-    if d.getVar("SDK_INCLUDE_NATIVESDK") == '1':
-        generate_nativesdk_lockedsigs(d)
     populate_sdk_common(d)
 }
 
@@ -769,7 +767,7 @@ def get_sdk_ext_rdepends(d):
 do_populate_sdk_ext[dirs] = "${@d.getVarFlag('do_populate_sdk', 'dirs', False)}"
 
 do_populate_sdk_ext[depends] = "${@d.getVarFlag('do_populate_sdk', 'depends', False)} \
-                                ${@'buildtools-tarball:do_populate_sdk' if d.getVar('SDK_INCLUDE_BUILDTOOLS') == '1' else ''} \
+                                buildtools-tarball:do_populate_sdk \
                                 ${@'meta-world-pkgdata:do_collect_packagedata' if d.getVar('SDK_INCLUDE_PKGDATA') == '1' else ''} \
                                 ${@'meta-extsdk-toolchain:do_locked_sigs' if d.getVar('SDK_INCLUDE_TOOLCHAIN') == '1' else ''}"
 

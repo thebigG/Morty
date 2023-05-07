@@ -33,6 +33,9 @@ PACKAGECONFIG[coresight] = "CORESIGHT=1,,opencsd"
 PACKAGECONFIG_remove_arc = "libunwind"
 PACKAGECONFIG_remove_riscv64 = "libunwind"
 
+# libaudit support would need scripting to be enabled
+PACKAGECONFIG[audit] = ",NO_LIBAUDIT=1,audit"
+
 DEPENDS = " \
     virtual/${MLPREFIX}libc \
     ${MLPREFIX}elfutils \
@@ -122,6 +125,24 @@ PERF_SRC ?= "Makefile \
              arch/${ARCH}/Makefile \
 "
 
+# During do_configure, we might run a 'make clean'. That often breaks
+# when done in parallel, so disable parallelism for do_configure. Note
+# that it has to be done this way rather than by passing -j1, since
+# perf's build system by default ignores any -j argument, but does
+# honour a JOBS variable.
+EXTRA_OEMAKE_append_task-configure = " JOBS=1"
+
+PERF_SRC ?= "Makefile \
+             include \
+             tools/arch \
+             tools/build \
+             tools/include \
+             tools/lib \
+             tools/Makefile \
+             tools/perf \
+             tools/scripts \
+"
+
 PERF_EXTRA_LDFLAGS = ""
 
 # MIPS N32
@@ -150,17 +171,12 @@ python copy_perf_source_from_kernel() {
     src_dir = d.getVar("STAGING_KERNEL_DIR")
     dest_dir = d.getVar("S")
     bb.utils.mkdirhier(dest_dir)
-    bb.utils.prunedir(dest_dir)
     for s in sources:
         src = oe.path.join(src_dir, s)
         dest = oe.path.join(dest_dir, s)
-        if not os.path.exists(src):
-            bb.fatal("Path does not exist: %s. Maybe PERF_SRC does not match the kernel version." % src)
         if os.path.isdir(src):
             oe.path.copyhardlinktree(src, dest)
         else:
-            src_path = os.path.dirname(s)
-            os.makedirs(os.path.join(dest_dir,src_path),exist_ok=True)
             bb.utils.copyfile(src, dest)
 }
 
@@ -267,7 +283,7 @@ PACKAGES =+ "${PN}-archive ${PN}-tests ${PN}-perl ${PN}-python"
 
 RDEPENDS_${PN} += "elfutils bash"
 RDEPENDS_${PN}-archive =+ "bash"
-RDEPENDS_${PN}-python =+ "bash python3 python3-modules ${@bb.utils.contains('PACKAGECONFIG', 'audit', 'audit-python3', '', d)}"
+RDEPENDS_${PN}-python =+ "bash python python-modules ${@bb.utils.contains('PACKAGECONFIG', 'audit', 'audit-python', '', d)}"
 RDEPENDS_${PN}-perl =+ "bash perl perl-modules"
 RDEPENDS_${PN}-tests =+ "python3"
 

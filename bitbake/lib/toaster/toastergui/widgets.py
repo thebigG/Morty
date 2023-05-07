@@ -76,10 +76,6 @@ class ToasterTable(TemplateView):
 
         # global variables
         context['project_enable'] = ('1' == os.environ.get('TOASTER_BUILDSERVER'))
-        try:
-            context['project_specific'] = ('1' == os.environ.get('TOASTER_PROJECTSPECIFIC'))
-        except:
-            context['project_specific'] = ''
 
         return context
 
